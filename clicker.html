@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Flappy Premium — выбор персонажа</title>
+    <title>Flappy Premium — анимация смерти</title>
     <style>
         * {
             user-select: none;
@@ -30,6 +30,7 @@
             padding: 24px;
             box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.15);
             border: 1px solid rgba(255, 255, 255, 0.25);
+            position: relative;
         }
 
         canvas {
@@ -159,6 +160,35 @@
             font-weight: 500;
         }
         .hidden { display: none; }
+        
+        /* Кнопка "Начать заново" по центру экрана */
+        .restart-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #FFB347, #FF8C1A);
+            border: none;
+            padding: 16px 32px;
+            border-radius: 60px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #1e1a0c;
+            cursor: pointer;
+            box-shadow: 0 8px 0 #8B4500;
+            transition: 0.05s linear;
+            z-index: 100;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+        .restart-overlay:active {
+            transform: translate(-50%, -50%) translateY(3px);
+            box-shadow: 0 4px 0 #8B4500;
+        }
+        .game-wrapper {
+            position: relative;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -177,7 +207,10 @@
         <div class="menu-btn back-btn" id="backToMenuBtn">◀ НАЗАД</div>
     </div>
 
-    <canvas id="gameCanvas" width="400" height="600" class="hidden"></canvas>
+    <div id="gameWrapper" class="game-wrapper hidden">
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <button id="restartOverlayBtn" class="restart-overlay hidden">🔄 НАЧАТЬ ЗАНОВО</button>
+    </div>
     <div id="gameUI" class="game-panel hidden">
         <div class="score-box">🏆 <span id="scoreValue">0</span></div>
         <div class="best-box">⭐ <span id="bestValue">0</span></div>
@@ -189,7 +222,7 @@
 
 <script>
     (function(){
-        // ---------- ПЕРСОНАЖИ (увеличенные) ----------
+        // ---------- ПЕРСОНАЖИ ----------
         const CHARACTERS = [
             { id: 'bird', name: 'ПТИЦА', emoji: '🐦', color: '#FFD966', draw: drawBird },
             { id: 'sponge', name: 'СПАНЧ БОБ', emoji: '🍍', color: '#F4C542', draw: drawSponge },
@@ -202,30 +235,38 @@
         // DOM
         const mainMenu = document.getElementById('mainMenu');
         const charMenu = document.getElementById('charMenu');
+        const gameWrapper = document.getElementById('gameWrapper');
         const canvas = document.getElementById('gameCanvas');
         const gameUI = document.getElementById('gameUI');
+        const restartOverlay = document.getElementById('restartOverlayBtn');
         const ctx = canvas.getContext('2d');
         const W = 400, H = 600;
         canvas.width = W; canvas.height = H;
         
-        // ИГРОВЫЕ ПАРАМЕТРЫ (улучшенная физика)
+        // ИГРОВЫЕ ПАРАМЕТРЫ
         let gameRunning = true;
+        let deathAnimation = false;
+        let deathTimer = null;
         let score = 0;
         let bestScore = localStorage.getItem('flappyPremiumBest') ? parseInt(localStorage.getItem('flappyPremiumBest')) : 0;
-        let birdY = H/2 - 20;  // центрирование для большого персонажа
+        let birdY = H/2 - 18;
         let birdVel = 0;
         const GRAVITY = 0.35;
-        const JUMP_POWER = -6.2;   // мощный прыжок
+        const JUMP_POWER = -6.2;
         let pipes = [];
         const PIPE_WIDTH = 56, PIPE_GAP = 158, PIPE_SPACING = 210;
         let gameSpeed = 2.5;
         const BASE_SPEED = 2.5;
         
-        // Размер персонажа (увеличен)
-        const CHAR_SIZE = 34;
+        // Размер персонажа
         const CHAR_WIDTH = 32;
         const CHAR_HEIGHT = 32;
         const birdX = 70;
+        
+        // Анимация смерти: эффект падения и затухания
+        let deathRotation = 0;
+        let deathAlpha = 1;
+        let deathFallY = 0;
         
         // UI
         const scoreSpan = document.getElementById('scoreValue');
@@ -244,6 +285,11 @@
         }
         
         function resetGame() {
+            if(deathTimer) clearTimeout(deathTimer);
+            deathAnimation = false;
+            deathRotation = 0;
+            deathAlpha = 1;
+            deathFallY = 0;
             gameRunning = true;
             score = 0; updateScoreUI();
             birdY = H/2 - 18; birdVel = 0;
@@ -251,30 +297,30 @@
             addPipe(); addPipe();
             if(pipes[0]) pipes[0].x = W;
             if(pipes[1]) pipes[1].x = W + PIPE_SPACING;
+            restartOverlay.classList.add('hidden');
         }
         
-        function flap() { if(gameRunning) birdVel = JUMP_POWER; }
+        function flap() { if(gameRunning && !deathAnimation) birdVel = JUMP_POWER; }
         
         // ЛОГИКА
         function updateGame() {
-            if(!gameRunning) return;
+            if(!gameRunning || deathAnimation) return;
             birdVel += GRAVITY;
             birdY += birdVel;
             
-            // границы
             if(birdY <= 0 || birdY + CHAR_HEIGHT >= H) {
-                gameRunning = false; saveBest(); return;
+                startDeathAnimation();
+                return;
             }
             
             for(let i=0;i<pipes.length;i++) {
                 const p = pipes[i];
                 p.x -= gameSpeed;
-                // столкновение
                 if(birdX + CHAR_WIDTH > p.x && birdX < p.x + PIPE_WIDTH &&
                    (birdY < p.topHeight || birdY + CHAR_HEIGHT > p.bottomY)) {
-                    gameRunning = false; saveBest(); return;
+                    startDeathAnimation();
+                    return;
                 }
-                // очки
                 if(!p.counted && birdX > p.x + PIPE_WIDTH) {
                     p.counted = true;
                     score += 1; updateScoreUI(); saveBest();
@@ -286,44 +332,94 @@
             if(pipes.length === 0 || pipes[pipes.length-1].x < W - PIPE_SPACING) addPipe();
         }
         
-        // ----- ОТРИСОВКА ПЕРСОНАЖЕЙ (увеличенные, детальные) -----
-        function drawBird(x,y) {
-            ctx.fillStyle = '#FFD966'; ctx.beginPath(); ctx.ellipse(x+16, y+16, 16, 14, 0, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#E69500'; ctx.beginPath(); ctx.ellipse(x+24, y+10, 7, 6, 0, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#000'; ctx.fillRect(x+25, y+9, 4, 5); ctx.fillStyle = 'white'; ctx.fillRect(x+26, y+8, 2, 2);
-            ctx.fillStyle = '#E65C1E'; ctx.beginPath(); ctx.moveTo(x+10, y+20); ctx.lineTo(x-6, y+15); ctx.lineTo(x+8, y+28); ctx.fill();
+        function startDeathAnimation() {
+            if(deathAnimation) return;
+            gameRunning = false;
+            deathAnimation = true;
+            deathRotation = 0;
+            deathAlpha = 1;
+            deathFallY = birdY;
+            saveBest();
+            
+            let fallInterval = setInterval(() => {
+                if(!deathAnimation) { clearInterval(fallInterval); return; }
+                deathFallY += 5;
+                deathRotation += 12;
+                deathAlpha -= 0.03;
+                if(deathFallY > H + 50 || deathAlpha <= 0) {
+                    clearInterval(fallInterval);
+                    deathAnimation = false;
+                    restartOverlay.classList.remove('hidden');
+                }
+            }, 30);
+            deathTimer = setTimeout(() => {
+                if(deathTimer) clearInterval(fallInterval);
+            }, 2000);
         }
         
-        function drawSponge(x,y) {
-            ctx.fillStyle = '#F7D44A'; ctx.fillRect(x+4, y+4, 28, 28);
-            ctx.fillStyle = '#B9770E'; for(let i=0;i<4;i++){ ctx.fillRect(x+8+i*6, y+8, 3, 6); ctx.fillRect(x+8+i*6, y+20, 3, 6);}
-            ctx.fillStyle = '#000'; ctx.fillRect(x+10, y+14, 4, 5); ctx.fillRect(x+20, y+14, 4, 5);
-            ctx.fillStyle = '#FFF'; ctx.fillRect(x+10, y+13, 2, 2); ctx.fillRect(x+20, y+13, 2, 2);
-            ctx.fillStyle = '#6B4C2C'; ctx.fillRect(x+14, y+25, 6, 4);
+        // ----- ОТРИСОВКА ПЕРСОНАЖЕЙ -----
+        function drawBird(x,y, rot, alpha) {
+            ctx.save();
+            ctx.translate(x+16, y+16);
+            ctx.rotate(rot * Math.PI/180);
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = '#FFD966'; ctx.beginPath(); ctx.ellipse(0, 0, 16, 14, 0, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#E69500'; ctx.beginPath(); ctx.ellipse(8, -6, 7, 6, 0, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#000'; ctx.fillRect(9, -7, 4, 5); ctx.fillStyle = 'white'; ctx.fillRect(10, -8, 2, 2);
+            ctx.fillStyle = '#E65C1E'; ctx.beginPath(); ctx.moveTo(-6, 4); ctx.lineTo(-22, -1); ctx.lineTo(-8, 12); ctx.fill();
+            ctx.restore();
         }
         
-        function drawKolobok(x,y) {
-            ctx.fillStyle = '#E8B86B'; ctx.beginPath(); ctx.arc(x+16, y+16, 16, 0, 2*Math.PI); ctx.fill();
-            ctx.fillStyle = '#8B5A2B'; ctx.fillRect(x+8, y+11, 4, 5); ctx.fillRect(x+22, y+11, 4, 5);
-            ctx.fillStyle = '#FFF'; ctx.fillRect(x+8, y+10, 2, 2); ctx.fillRect(x+22, y+10, 2, 2);
-            ctx.fillStyle = '#D2691E'; ctx.beginPath(); ctx.arc(x+16, y+25, 6, 0, Math.PI); ctx.fill();
+        function drawSponge(x,y, rot, alpha) {
+            ctx.save();
+            ctx.translate(x+16, y+16);
+            ctx.rotate(rot * Math.PI/180);
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = '#F7D44A'; ctx.fillRect(-12, -12, 28, 28);
+            ctx.fillStyle = '#B9770E'; for(let i=0;i<4;i++){ ctx.fillRect(-8+i*6, -8, 3, 6); ctx.fillRect(-8+i*6, 4, 3, 6);}
+            ctx.fillStyle = '#000'; ctx.fillRect(-6, -2, 4, 5); ctx.fillRect(4, -2, 4, 5);
+            ctx.fillStyle = '#FFF'; ctx.fillRect(-6, -3, 2, 2); ctx.fillRect(4, -3, 2, 2);
+            ctx.fillStyle = '#6B4C2C'; ctx.fillRect(-2, 9, 6, 4);
+            ctx.restore();
         }
         
-        function drawCat(x,y) {
-            ctx.fillStyle = '#F5AC78'; ctx.fillRect(x+5, y+5, 24, 26);
-            ctx.fillStyle = '#E08E4A'; ctx.beginPath(); ctx.moveTo(x+5, y+5); ctx.lineTo(x, y); ctx.lineTo(x+12, y+5); ctx.fill();
-            ctx.beginPath(); ctx.moveTo(x+29, y+5); ctx.lineTo(x+34, y); ctx.lineTo(x+22, y+5); ctx.fill();
-            ctx.fillStyle = '#000'; ctx.fillRect(x+11, y+13, 4, 5); ctx.fillRect(x+20, y+13, 4, 5);
-            ctx.fillStyle = '#FFF'; ctx.fillRect(x+11, y+12, 2, 2); ctx.fillRect(x+20, y+12, 2, 2);
-            for(let i=0;i<3;i++) ctx.fillRect(x+6+i*8, y+27, 2, 4);
+        function drawKolobok(x,y, rot, alpha) {
+            ctx.save();
+            ctx.translate(x+16, y+16);
+            ctx.rotate(rot * Math.PI/180);
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = '#E8B86B'; ctx.beginPath(); ctx.arc(0, 0, 16, 0, 2*Math.PI); ctx.fill();
+            ctx.fillStyle = '#8B5A2B'; ctx.fillRect(-8, -5, 4, 5); ctx.fillRect(6, -5, 4, 5);
+            ctx.fillStyle = '#FFF'; ctx.fillRect(-8, -6, 2, 2); ctx.fillRect(6, -6, 2, 2);
+            ctx.fillStyle = '#D2691E'; ctx.beginPath(); ctx.arc(0, 9, 6, 0, Math.PI); ctx.fill();
+            ctx.restore();
         }
         
-        function drawRobot(x,y) {
-            ctx.fillStyle = '#7FC5FF'; ctx.fillRect(x+4, y+3, 26, 28);
-            ctx.fillStyle = '#4C7AB3'; ctx.fillRect(x+10, y-4, 14, 8);
-            ctx.fillStyle = '#000'; ctx.fillRect(x+11, y+12, 4, 5); ctx.fillRect(x+20, y+12, 4, 5);
-            ctx.fillStyle = '#0FF'; ctx.fillRect(x+13, y+22, 8, 4);
-            for(let i=0;i<2;i++) ctx.fillRect(x+7+i*18, y+28, 3, 4);
+        function drawCat(x,y, rot, alpha) {
+            ctx.save();
+            ctx.translate(x+16, y+16);
+            ctx.rotate(rot * Math.PI/180);
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = '#F5AC78'; ctx.fillRect(-11, -11, 24, 26);
+            ctx.fillStyle = '#E08E4A'; ctx.beginPath(); ctx.moveTo(-11, -11); ctx.lineTo(-16, -16); ctx.lineTo(-4, -11); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(13, -11); ctx.lineTo(18, -16); ctx.lineTo(6, -11); ctx.fill();
+            ctx.fillStyle = '#000'; ctx.fillRect(-5, -3, 4, 5); ctx.fillRect(4, -3, 4, 5);
+            ctx.fillStyle = '#FFF'; ctx.fillRect(-5, -4, 2, 2); ctx.fillRect(4, -4, 2, 2);
+            for(let i=0;i<3;i++) ctx.fillRect(-10+i*8, 11, 2, 4);
+            ctx.restore();
+        }
+        
+        function drawRobot(x,y, rot, alpha) {
+            ctx.save();
+            ctx.translate(x+16, y+16);
+            ctx.rotate(rot * Math.PI/180);
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = '#7FC5FF'; ctx.fillRect(-12, -13, 26, 28);
+            ctx.fillStyle = '#4C7AB3'; ctx.fillRect(-6, -20, 14, 8);
+            ctx.fillStyle = '#000'; ctx.fillRect(-5, -4, 4, 5); ctx.fillRect(4, -4, 4, 5);
+            ctx.fillStyle = '#0FF'; ctx.fillRect(-3, 6, 8, 4);
+            for(let i=0;i<2;i++) ctx.fillRect(-9+i*18, 12, 3, 4);
+            ctx.restore();
         }
         
         // ОТРИСОВКА МИРА
@@ -333,7 +429,6 @@
             grad.addColorStop(0, '#0F172A'); grad.addColorStop(1, '#1E293B');
             ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
             
-            // трубы
             for(let p of pipes) {
                 ctx.fillStyle = '#2F6B47CC'; ctx.fillRect(p.x, 0, PIPE_WIDTH, p.topHeight);
                 ctx.fillStyle = '#A8E6A0CC'; ctx.fillRect(p.x+5, p.topHeight-38, PIPE_WIDTH-10, 38);
@@ -341,23 +436,27 @@
                 ctx.fillStyle = '#A8E6A0CC'; ctx.fillRect(p.x+5, p.bottomY, PIPE_WIDTH-10, 38);
             }
             
-            // персонаж
             const char = CHARACTERS.find(c => c.id === currentCharId);
-            if(char && char.draw) char.draw(birdX, birdY);
-            else drawBird(birdX, birdY);
+            if(deathAnimation) {
+                if(char && char.draw) {
+                    char.draw(birdX, deathFallY, deathRotation, deathAlpha);
+                } else {
+                    drawBird(birdX, deathFallY, deathRotation, deathAlpha);
+                }
+            } else {
+                if(char && char.draw) {
+                    char.draw(birdX, birdY, 0, 1);
+                } else {
+                    drawBird(birdX, birdY, 0, 1);
+                }
+            }
             
-            // счёт
             ctx.font = "bold 46px 'Segoe UI'"; ctx.fillStyle = '#FFF7E8'; ctx.shadowBlur = 0;
             ctx.fillText(Math.floor(score), W/2-22, 75);
-            
-            if(!gameRunning){
-                ctx.font = "bold 26px 'Segoe UI'"; ctx.fillStyle = '#FFA08C'; ctx.fillText("✦ GAME OVER ✦", W/2-105, H/2-45);
-                ctx.font = "14px monospace"; ctx.fillStyle = '#DDD'; ctx.fillText("нажми «ЗАНОВО»", W/2-62, H/2+20);
-            }
             ctx.font = "bold 12px monospace"; ctx.fillStyle = '#B0E0E6'; ctx.fillText("speed: "+gameSpeed.toFixed(1), W-72, 28);
         }
         
-        // ЦИКЛ 120fps
+        // ЦИКЛ
         let animFrame;
         function gameLoop() { updateGame(); draw(); animFrame = requestAnimationFrame(gameLoop); }
         
@@ -383,14 +482,14 @@
         }
         
         // НАВИГАЦИЯ
-        function showMainMenu() { mainMenu.classList.remove('hidden'); charMenu.classList.add('hidden'); canvas.classList.add('hidden'); gameUI.classList.add('hidden'); if(animFrame) cancelAnimationFrame(animFrame); }
-        function showCharMenu() { mainMenu.classList.add('hidden'); charMenu.classList.remove('hidden'); canvas.classList.add('hidden'); gameUI.classList.add('hidden'); if(animFrame) cancelAnimationFrame(animFrame); renderCharGrid(); }
+        function showMainMenu() { mainMenu.classList.remove('hidden'); charMenu.classList.add('hidden'); gameWrapper.classList.add('hidden'); gameUI.classList.add('hidden'); if(animFrame) cancelAnimationFrame(animFrame); }
+        function showCharMenu() { mainMenu.classList.add('hidden'); charMenu.classList.remove('hidden'); gameWrapper.classList.add('hidden'); gameUI.classList.add('hidden'); if(animFrame) cancelAnimationFrame(animFrame); renderCharGrid(); }
         function startGame() {
             mainMenu.classList.add('hidden'); charMenu.classList.add('hidden');
-            canvas.classList.remove('hidden'); gameUI.classList.remove('hidden');
-            resetGame(); gameRunning = true;
+            gameWrapper.classList.remove('hidden'); gameUI.classList.remove('hidden');
+            resetGame();
             if(animFrame) cancelAnimationFrame(animFrame);
-            animFrame = requestAnimationFrame(function loop(){ updateGame(); draw(); animFrame = requestAnimationFrame(loop); });
+            animFrame = requestAnimationFrame(gameLoop);
         }
         
         // ОБРАБОТЧИКИ
@@ -398,11 +497,11 @@
         document.getElementById('charactersBtn').onclick = () => showCharMenu();
         document.getElementById('backToMenuBtn').onclick = () => showMainMenu();
         document.getElementById('menuFromGameBtn').onclick = () => { if(animFrame) cancelAnimationFrame(animFrame); showMainMenu(); };
-        document.getElementById('resetGameBtn').onclick = () => { resetGame(); gameRunning = true; };
+        document.getElementById('resetGameBtn').onclick = () => { resetGame(); };
+        restartOverlay.onclick = () => { resetGame(); };
         canvas.addEventListener('click', (e) => { e.preventDefault(); flap(); });
         window.addEventListener('keydown', (e) => { if(e.code === 'Space') { e.preventDefault(); flap(); } });
         
-        // СТАРТ
         bestSpan.innerText = bestScore;
         showMainMenu();
         renderCharGrid();
