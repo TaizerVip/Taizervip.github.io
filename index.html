@@ -201,16 +201,17 @@
     let canAnswer = true;
     let currentQuestionText = '';
 
-    // --- ФОНОВАЯ МУЗЫКА ---
+    // --- НОВАЯ ФОНОВАЯ МУЗЫКА (MORGENSHTERN) ---
     let backgroundMusic;
-    let musicEnabled = false;  // По умолчанию выключена (пользователь сам включит)
+    let musicEnabled = false;
 
-    const musicUrl = 'https://raw.githubusercontent.com/TaizerVip/Taizervip.github.io/main/Spokojjnaya_fonovaya_muzyka_onovaya_muzyka_Muzyka_dlya_sna_Rasslablyayushhaya_Muzyka_dlya_Sna_Spokojjnaya_muzyka_dlya_sna_-_Muzyka_bez_slov_dlya_rasslableniya_i_spokojjstviya_80052174.mp3';
+    // ПРЯМАЯ ССЫЛКА ДЛЯ СКАЧИВАНИЯ (raw)
+    const musicUrl = 'https://raw.githubusercontent.com/TaizerVip/Taizervip.github.io/main/MORGENSHTERN_-_PUSTOJJ_VOKZAL_79042610.mp3';
 
     function initMusic() {
         backgroundMusic = new Audio(musicUrl);
         backgroundMusic.loop = true;
-        backgroundMusic.volume = 0.25;  // Тихая фоновая музыка
+        backgroundMusic.volume = 0.25;
         
         // Для iPhone: звук может включиться только после касания
         document.body.addEventListener('touchstart', () => {
