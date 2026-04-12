@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Динозаврик — бесконечный бег</title>
+    <style>
+        * {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #1e1e2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Courier New', 'Segoe UI', monospace;
+        }
+
+        .game-container {
+            background: #f7f7f7;
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.3);
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            cursor: pointer;
+        }
+
+        .info {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-top: 16px;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .score-box, .best-box {
+            background: #2d2d3a;
+            padding: 8px 18px;
+            border-radius: 60px;
+            color: #f9e2af;
+            font-weight: bold;
+            font-size: 1.3rem;
+        }
+
+        .best-box {
+            background: #313244;
+            color: #a6e3a1;
+        }
+
+        button {
+            background: #89b4fa;
+            border: none;
+            font-size: 1rem;
+            font-weight: bold;
+            padding: 8px 20px;
+            border-radius: 60px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: transform 0.1s;
+        }
+
+        button:active {
+            transform: scale(0.96);
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .status {
+            font-size: 0.9rem;
+            background: #45475a;
+            padding: 6px 14px;
+            border-radius: 50px;
+            color: #cdd6f4;
+        }
+
+        @media (max-width: 550px) {
+            .game-container {
+                padding: 12px;
+            }
+            .score-box, .best-box {
+                font-size: 1rem;
+                padding: 5px 12px;
+            }
+            .status {
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div>
+    <div class="game-container">
+        <canvas id="gameCanvas" width="800" height="200"></canvas>
+        <div class="info">
+            <div class="score-box">🏆 СЧЁТ: <span id="scoreValue">0</span></div>
+            <div class="best-box">⭐ РЕКОРД: <span id="bestValue">0</span></div>
+            <div class="controls">
+                <span class="status">🦖 ПРОБЕЛ / КЛИК — ПРЫЖОК</span>
+                <button id="resetGameBtn">🔄 НАЧАТЬ ЗАНОВО</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function(){
+        // -------- ПОЛОТНО --------
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // -------- РАЗМЕРЫ --------
+        const GROUND_Y = 160;      // высота земли от верха canvas
+        const DINO_WIDTH = 24;
+        const DINO_HEIGHT = 28;
+        const CACTUS_WIDTH = 12;
+        const CACTUS_HEIGHT = 28;
+        
+        // -------- ИГРОВЫЕ ПЕРЕМЕННЫЕ --------
+        let gameRunning = true;
+        let score = 0;
+        let bestScore = localStorage.getItem('dinoBestScore') ? parseInt(localStorage.getItem('dinoBestScore')) : 0;
+        
+        // Динозавр
+        let dinoY = GROUND_Y - DINO_HEIGHT;
+        let dinoBaseY = GROUND_Y - DINO_HEIGHT;
+        let isJumping = false;
+        let jumpVelocity = 0;
+        const GRAVITY = 1.2;
+        const JUMP_POWER = -9;
+        
+        // Кактус
+        let cactusX = canvas.width;
+        let cactusSpeed = 4;
+        let baseSpeed = 4;
+        
+        // Счётчик кадров для генерации кактусов
+        let frameCounter = 0;
+        let nextCactusGap = 90;   // через сколько кадров новый кактус
+        
+        // -------- РЕКОРД --------
+        function updateBestUI() {
+            document.getElementById('bestValue').innerText = bestScore;
+        }
+        updateBestUI();
+        
+        function checkBest() {
+            if(score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('dinoBestScore', bestScore);
+                updateBestUI();
+            }
+        }
+        
+        // -------- ОБНОВЛЕНИЕ СЧЁТА --------
+        function updateScoreUI() {
+            document.getElementById('scoreValue').innerText = Math.floor(score);
+        }
+        
+        // -------- ПРЫЖОК --------
+        function jump() {
+            if(!gameRunning) return;
+            // можно прыгать только если на земле
+            if(!isJumping && dinoY >= dinoBaseY - 1) {
+                isJumping = true;
+                jumpVelocity = JUMP_POWER;
+            }
+        }
+        
+        // -------- СБРОС ИГРЫ --------
+        function resetGame() {
+            gameRunning = true;
+            score = 0;
+            updateScoreUI();
+            cactusSpeed = baseSpeed;
+            cactusX = canvas.width;
+            frameCounter = 0;
+            nextCactusGap = 80;
+            // динозаврик
+            isJumping = false;
+            jumpVelocity = 0;
+            dinoY = dinoBaseY;
+            // убираем статус Game Over
+            gameRunning = true;
+        }
+        
+        // -------- ОБНОВЛЕНИЕ ЛОГИКИ --------
+        function updateGame() {
+            if(!gameRunning) return;
+            
+            // 1. ФИЗИКА ДИНОЗАВРА
+            if(isJumping) {
+                jumpVelocity += GRAVITY;
+                dinoY += jumpVelocity;
+                // приземление
+                if(dinoY >= dinoBaseY) {
+                    dinoY = dinoBaseY;
+                    isJumping = false;
+                    jumpVelocity = 0;
+                }
+                // защита от вылета вверх
+                if(dinoY < 0) dinoY = 0;
+            }
+            
+            // 2. ДВИЖЕНИЕ КАКТУСА
+            cactusX -= cactusSpeed;
+            
+            // 3. ГЕНЕРАЦИЯ НОВОГО КАКТУСА (чтоб бесконечно)
+            if(gameRunning) {
+                frameCounter++;
+                if(frameCounter >= nextCactusGap && cactusX < canvas.width - 250) {
+                    cactusX = canvas.width;
+                    frameCounter = 0;
+                    // случайный интервал до следующего кактуса (чтобы не было скучно)
+                    nextCactusGap = 70 + Math.floor(Math.random() * 45);
+                    // иногда увеличиваем скорость (сложность растёт)
+                    if(cactusSpeed < 9) {
+                        cactusSpeed = baseSpeed + Math.floor(score / 400);
+                        if(cactusSpeed > 9) cactusSpeed = 9;
+                    }
+                }
+            }
+            
+            // 4. СТОЛКНОВЕНИЕ (прямоугольники)
+            const dinoLeft = 50;
+            const dinoRight = 50 + DINO_WIDTH;
+            const dinoTop = dinoY;
+            const dinoBottom = dinoY + DINO_HEIGHT;
+            
+            const cactusLeft = cactusX;
+            const cactusRight = cactusX + CACTUS_WIDTH;
+            const cactusTop = GROUND_Y - CACTUS_HEIGHT;
+            const cactusBottom = GROUND_Y;
+            
+            if(dinoRight > cactusLeft && dinoLeft < cactusRight &&
+               dinoBottom > cactusTop && dinoTop < cactusBottom) {
+                gameRunning = false;
+                checkBest();   // сохраняем рекорд
+            }
+            
+            // 5. НАЧИСЛЕНИЕ ОЧКОВ (чем дольше живёшь, тем больше)
+            if(gameRunning) {
+                score += 0.2;
+                updateScoreUI();
+            }
+            
+            // если кактус ушёл за левый край, не сбрасываем его тут,
+            // просто он уйдёт и появится новый благодаря генерации
+            if(cactusX + CACTUS_WIDTH < 0) {
+                cactusX = canvas.width + 100; // далеко за экран, чтоб не мешал
+            }
+        }
+        
+        // -------- ОТРИСОВКА --------
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 1. ЗЕМЛЯ
+            ctx.fillStyle = "#e0e0e0";
+            ctx.fillRect(0, GROUND_Y, canvas.width, canvas.height - GROUND_Y + 5);
+            ctx.fillStyle = "#a0a0a0";
+            ctx.fillRect(0, GROUND_Y - 3, canvas.width, 4);
+            
+            // 2. ДИНОЗАВРИК (милый зелёный с чёрным глазом)
+            ctx.fillStyle = "#4c8b3c";
+            ctx.fillRect(50, dinoY, DINO_WIDTH, DINO_HEIGHT);
+            // брюшко
+            ctx.fillStyle = "#6eab5a";
+            ctx.fillRect(50 + 4, dinoY + DINO_HEIGHT-8, 8, 6);
+            // глаз
+            ctx.fillStyle = "#000000";
+            ctx.fillRect(50 + 16, dinoY + 6, 5, 5);
+            ctx.fillStyle = "white";
+            ctx.fillRect(50 + 17, dinoY + 7, 2, 2);
+            // шипы на спине
+            ctx.fillStyle = "#2b5e1e";
+            for(let i=0;i<3;i++) {
+                ctx.fillRect(50 + 6 + i*6, dinoY - 3, 4, 6);
+            }
+            
+            // 3. КАКТУС
+            ctx.fillStyle = "#2d6a4f";
+            ctx.fillRect(cactusX, GROUND_Y - CACTUS_HEIGHT, CACTUS_WIDTH, CACTUS_HEIGHT);
+            ctx.fillStyle = "#1b4d3e";
+            for(let i=0;i<3;i++) {
+                ctx.fillRect(cactusX + 2 + i*3, GROUND_Y - CACTUS_HEIGHT - 6, 3, 8);
+            }
+            
+            // 4. ОБЛАЧКО (декор)
+            ctx.fillStyle = "#c0c0d0";
+            ctx.beginPath();
+            ctx.ellipse(140, 40, 28, 22, 0, 0, Math.PI*2);
+            ctx.ellipse(160, 32, 24, 20, 0, 0, Math.PI*2);
+            ctx.ellipse(120, 35, 20, 18, 0, 0, Math.PI*2);
+            ctx.fill();
+            
+            // 5. GAME OVER
+            if(!gameRunning) {
+                ctx.font = "bold 28monospace";
+                ctx.fillStyle = "#d32f2f";
+                ctx.shadowBlur = 0;
+                ctx.fillText("💀 GAME OVER 💀", canvas.width/2-120, 70);
+                ctx.font = "16monospace";
+                ctx.fillStyle = "#1e1e2e";
+                ctx.fillText("нажми «НАЧАТЬ ЗАНОВО»", canvas.width/2-110, 115);
+            }
+            
+            // скорость и подсказка
+            ctx.font = "12monospace";
+            ctx.fillStyle = "#4e4e6b";
+            ctx.fillText("speed: "+cactusSpeed.toFixed(1), canvas.width-70, 30);
+        }
+        
+        // -------- ЦИКЛ ИГРЫ --------
+        function gameLoop() {
+            updateGame();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // -------- СОБЫТИЯ УПРАВЛЕНИЯ --------
+        function handleJump(e) {
+            // пробел или клик по canvas
+            if(e.type === 'keydown') {
+                if(e.code === 'Space') {
+                    e.preventDefault();
+                    jump();
+                }
+            } else if(e.type === 'click') {
+                e.preventDefault();
+                jump();
+            }
+        }
+        
+        // Сброс через кнопку
+        document.getElementById('resetGameBtn').addEventListener('click', () => {
+            resetGame();
+        });
+        
+        // Прыжок по нажатию на canvas (удобно на телефоне)
+        canvas.addEventListener('click', (e) => {
+            e.preventDefault();
+            jump();
+        });
+        
+        // Прыжок по клавише пробел
+        window.addEventListener('keydown', (e) => {
+            if(e.code === 'Space') {
+                e.preventDefault();
+                jump();
+            }
+        });
+        
+        // Запрещаем прокрутку страницы стрелками и пробелом
+        window.addEventListener('keydown', function(e) {
+            if(e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'ArrowDown') {
+                e.preventDefault();
+            }
+        });
+        
+        // -------- СТАРТ --------
+        resetGame();       // начальное состояние
+        gameLoop();
+    })();
+</script>
+</body>
+</html>
