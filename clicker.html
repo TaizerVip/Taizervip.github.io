@@ -19,11 +19,10 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: 'Segoe UI', 'Poppins', 'Inter', system-ui, -apple-system, sans-serif;
+            font-family: 'Segoe UI', 'Poppins', 'Inter', system-ui, sans-serif;
             padding: 20px;
         }
 
-        /* ГЛАВНЫЙ КОНТЕЙНЕР — премиум стекло с контрастом */
         .premium-container {
             background: rgba(18, 22, 45, 0.85);
             backdrop-filter: blur(20px);
@@ -31,7 +30,6 @@
             padding: 24px;
             box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.15);
             border: 1px solid rgba(255, 255, 255, 0.25);
-            transition: all 0.2s;
         }
 
         canvas {
@@ -43,7 +41,6 @@
             background: #0b1120;
         }
 
-        /* МЕНЮ — крупно, читаемо */
         .menu {
             text-align: center;
             color: white;
@@ -59,7 +56,6 @@
             background-clip: text;
             color: transparent;
             text-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            letter-spacing: 1px;
         }
 
         .menu-buttons {
@@ -86,7 +82,6 @@
         }
         .menu-btn:active { transform: translateY(2px); box-shadow: 0 3px 0 #8B4500; }
 
-        /* СЕТКА ПЕРСОНАЖЕЙ — яркая, с обводкой */
         .characters-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -121,7 +116,6 @@
             color: #f0f0f0;
         }
 
-        /* ИГРОВАЯ ПАНЕЛЬ (контрастная) */
         .game-panel {
             display: flex;
             justify-content: space-between;
@@ -169,7 +163,6 @@
 </head>
 <body>
 <div id="app" class="premium-container">
-    <!-- МЕНЮ ГЛАВНОЕ -->
     <div id="mainMenu" class="menu">
         <h1>✨ FLAPPY PREMIUM ✨</h1>
         <div class="menu-buttons">
@@ -178,14 +171,12 @@
         </div>
     </div>
 
-    <!-- МЕНЮ ВЫБОРА ПЕРСОНАЖА -->
     <div id="charMenu" class="menu hidden">
         <h1>🌟 ВЫБЕРИ ГЕРОЯ</h1>
         <div class="characters-grid" id="charGrid"></div>
         <div class="menu-btn back-btn" id="backToMenuBtn">◀ НАЗАД</div>
     </div>
 
-    <!-- ИГРОВОЙ ЭКРАН -->
     <canvas id="gameCanvas" width="400" height="600" class="hidden"></canvas>
     <div id="gameUI" class="game-panel hidden">
         <div class="score-box">🏆 <span id="scoreValue">0</span></div>
@@ -198,7 +189,7 @@
 
 <script>
     (function(){
-        // ---------- ПЕРСОНАЖИ ----------
+        // ---------- ПЕРСОНАЖИ (увеличенные) ----------
         const CHARACTERS = [
             { id: 'bird', name: 'ПТИЦА', emoji: '🐦', color: '#FFD966', draw: drawBird },
             { id: 'sponge', name: 'СПАНЧ БОБ', emoji: '🍍', color: '#F4C542', draw: drawSponge },
@@ -217,20 +208,26 @@
         const W = 400, H = 600;
         canvas.width = W; canvas.height = H;
         
-        // игровые переменные (супер плавные)
+        // ИГРОВЫЕ ПАРАМЕТРЫ (улучшенная физика)
         let gameRunning = true;
         let score = 0;
         let bestScore = localStorage.getItem('flappyPremiumBest') ? parseInt(localStorage.getItem('flappyPremiumBest')) : 0;
-        let birdY = H/2 - 12;
+        let birdY = H/2 - 20;  // центрирование для большого персонажа
         let birdVel = 0;
-        const GRAVITY = 0.21;
-        const JUMP_POWER = -4.9;
+        const GRAVITY = 0.35;
+        const JUMP_POWER = -6.2;   // мощный прыжок
         let pipes = [];
-        const PIPE_WIDTH = 56, PIPE_GAP = 152, PIPE_SPACING = 210;
-        let gameSpeed = 2.4;
-        const BASE_SPEED = 2.4;
+        const PIPE_WIDTH = 56, PIPE_GAP = 158, PIPE_SPACING = 210;
+        let gameSpeed = 2.5;
+        const BASE_SPEED = 2.5;
         
-        // UI элементы
+        // Размер персонажа (увеличен)
+        const CHAR_SIZE = 34;
+        const CHAR_WIDTH = 32;
+        const CHAR_HEIGHT = 32;
+        const birdX = 70;
+        
+        // UI
         const scoreSpan = document.getElementById('scoreValue');
         const bestSpan = document.getElementById('bestValue');
         bestSpan.innerText = bestScore;
@@ -238,10 +235,10 @@
         function updateBestUI() { bestSpan.innerText = bestScore; }
         function saveBest() { let s = Math.floor(score); if(s > bestScore) { bestScore = s; localStorage.setItem('flappyPremiumBest', bestScore); updateBestUI(); } }
         
-        // трубы (без багов)
+        // Трубы
         function addPipe() {
-            let minTop = 65, maxTop = H - PIPE_GAP - 70;
-            if(maxTop <= minTop) maxTop = minTop + 45;
+            let minTop = 50, maxTop = H - PIPE_GAP - 60;
+            if(maxTop <= minTop) maxTop = minTop + 50;
             let topHeight = Math.floor(Math.random() * (maxTop - minTop + 1) + minTop);
             pipes.push({ x: W, topHeight: topHeight, bottomY: topHeight + PIPE_GAP, counted: false });
         }
@@ -249,7 +246,7 @@
         function resetGame() {
             gameRunning = true;
             score = 0; updateScoreUI();
-            birdY = H/2 - 12; birdVel = 0;
+            birdY = H/2 - 18; birdVel = 0;
             pipes = []; gameSpeed = BASE_SPEED;
             addPipe(); addPipe();
             if(pipes[0]) pipes[0].x = W;
@@ -258,82 +255,101 @@
         
         function flap() { if(gameRunning) birdVel = JUMP_POWER; }
         
-        // ----- ЛОГИКА -----
-        const birdX = 70;
+        // ЛОГИКА
         function updateGame() {
             if(!gameRunning) return;
-            birdVel += GRAVITY; birdY += birdVel;
-            if(birdY <= 2 || birdY + 24 >= H-2) { gameRunning = false; saveBest(); return; }
+            birdVel += GRAVITY;
+            birdY += birdVel;
+            
+            // границы
+            if(birdY <= 0 || birdY + CHAR_HEIGHT >= H) {
+                gameRunning = false; saveBest(); return;
+            }
+            
             for(let i=0;i<pipes.length;i++) {
                 const p = pipes[i];
                 p.x -= gameSpeed;
-                if(birdX+24 > p.x && birdX < p.x+PIPE_WIDTH && (birdY < p.topHeight || birdY+24 > p.bottomY)) {
+                // столкновение
+                if(birdX + CHAR_WIDTH > p.x && birdX < p.x + PIPE_WIDTH &&
+                   (birdY < p.topHeight || birdY + CHAR_HEIGHT > p.bottomY)) {
                     gameRunning = false; saveBest(); return;
                 }
-                if(!p.counted && birdX > p.x+PIPE_WIDTH) {
+                // очки
+                if(!p.counted && birdX > p.x + PIPE_WIDTH) {
                     p.counted = true;
                     score += 1; updateScoreUI(); saveBest();
-                    if(gameSpeed < 5.2) gameSpeed = BASE_SPEED + Math.floor(score/24)*0.16;
-                    if(gameSpeed > 5.2) gameSpeed = 5.2;
+                    if(gameSpeed < 5.5) gameSpeed = BASE_SPEED + Math.floor(score/22) * 0.18;
+                    if(gameSpeed > 5.5) gameSpeed = 5.5;
                 }
             }
             pipes = pipes.filter(p => p.x + PIPE_WIDTH > 0);
-            if(pipes.length===0 || pipes[pipes.length-1].x < W - PIPE_SPACING) addPipe();
+            if(pipes.length === 0 || pipes[pipes.length-1].x < W - PIPE_SPACING) addPipe();
         }
         
-        // ----- ОТРИСОВКА ПЕРСОНАЖЕЙ (чёткая, жирная) -----
+        // ----- ОТРИСОВКА ПЕРСОНАЖЕЙ (увеличенные, детальные) -----
         function drawBird(x,y) {
-            ctx.fillStyle = '#FFD966'; ctx.beginPath(); ctx.ellipse(x+12, y+12, 13, 12, 0, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#E69500'; ctx.beginPath(); ctx.ellipse(x+18, y+8, 5, 4.5, 0, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#000'; ctx.fillRect(x+19, y+7, 3, 4); ctx.fillStyle = 'white'; ctx.fillRect(x+20, y+6, 1.5, 2);
-            ctx.fillStyle = '#E65C1E'; ctx.beginPath(); ctx.moveTo(x+8, y+14); ctx.lineTo(x-4, y+11); ctx.lineTo(x+6, y+20); ctx.fill();
-        }
-        function drawSponge(x,y) {
-            ctx.fillStyle = '#F7D44A'; ctx.fillRect(x+2, y+2, 20, 20);
-            ctx.fillStyle = '#B9770E'; for(let i=0;i<3;i++){ ctx.fillRect(x+5+i*5, y+5, 2, 5); ctx.fillRect(x+5+i*5, y+14, 2, 5);}
-            ctx.fillStyle = '#000'; ctx.fillRect(x+6, y+9, 3, 4); ctx.fillRect(x+14, y+9, 3, 4);
-            ctx.fillStyle = '#FFF'; ctx.fillRect(x+6, y+8, 1, 2); ctx.fillRect(x+14, y+8, 1, 2);
-            ctx.fillStyle = '#6B4C2C'; ctx.fillRect(x+10, y+17, 4, 3);
-        }
-        function drawKolobok(x,y) {
-            ctx.fillStyle = '#E8B86B'; ctx.beginPath(); ctx.arc(x+12, y+12, 12, 0, 2*Math.PI); ctx.fill();
-            ctx.fillStyle = '#8B5A2B'; ctx.fillRect(x+6, y+8, 3, 4); ctx.fillRect(x+16, y+8, 3, 4);
-            ctx.fillStyle = '#FFF'; ctx.fillRect(x+6, y+7, 1, 2); ctx.fillRect(x+16, y+7, 1, 2);
-            ctx.fillStyle = '#D2691E'; ctx.beginPath(); ctx.arc(x+12, y+17, 4, 0, Math.PI); ctx.fill();
-        }
-        function drawCat(x,y) {
-            ctx.fillStyle = '#F5AC78'; ctx.fillRect(x+4, y+4, 16, 18);
-            ctx.fillStyle = '#E08E4A'; ctx.beginPath(); ctx.moveTo(x+4, y+4); ctx.lineTo(x, y); ctx.lineTo(x+8, y+4); ctx.fill();
-            ctx.beginPath(); ctx.moveTo(x+20, y+4); ctx.lineTo(x+24, y); ctx.lineTo(x+16, y+4); ctx.fill();
-            ctx.fillStyle = '#000'; ctx.fillRect(x+8, y+9, 3, 4); ctx.fillRect(x+14, y+9, 3, 4);
-            ctx.fillStyle = '#FFF'; ctx.fillRect(x+8, y+8, 1, 2); ctx.fillRect(x+14, y+8, 1, 2);
-            for(let i=0;i<3;i++) ctx.fillRect(x+4+i*4, y+19, 1, 3);
-        }
-        function drawRobot(x,y) {
-            ctx.fillStyle = '#7FC5FF'; ctx.fillRect(x+3, y+2, 18, 20);
-            ctx.fillStyle = '#4C7AB3'; ctx.fillRect(x+7, y-3, 10, 6);
-            ctx.fillStyle = '#000'; ctx.fillRect(x+8, y+8, 3, 4); ctx.fillRect(x+14, y+8, 3, 4);
-            ctx.fillStyle = '#0FF'; ctx.fillRect(x+9, y+15, 6, 3);
-            for(let i=0;i<2;i++) ctx.fillRect(x+5+i*12, y+20, 2, 3);
+            ctx.fillStyle = '#FFD966'; ctx.beginPath(); ctx.ellipse(x+16, y+16, 16, 14, 0, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#E69500'; ctx.beginPath(); ctx.ellipse(x+24, y+10, 7, 6, 0, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#000'; ctx.fillRect(x+25, y+9, 4, 5); ctx.fillStyle = 'white'; ctx.fillRect(x+26, y+8, 2, 2);
+            ctx.fillStyle = '#E65C1E'; ctx.beginPath(); ctx.moveTo(x+10, y+20); ctx.lineTo(x-6, y+15); ctx.lineTo(x+8, y+28); ctx.fill();
         }
         
-        // отрисовка мира (контрастный фон)
+        function drawSponge(x,y) {
+            ctx.fillStyle = '#F7D44A'; ctx.fillRect(x+4, y+4, 28, 28);
+            ctx.fillStyle = '#B9770E'; for(let i=0;i<4;i++){ ctx.fillRect(x+8+i*6, y+8, 3, 6); ctx.fillRect(x+8+i*6, y+20, 3, 6);}
+            ctx.fillStyle = '#000'; ctx.fillRect(x+10, y+14, 4, 5); ctx.fillRect(x+20, y+14, 4, 5);
+            ctx.fillStyle = '#FFF'; ctx.fillRect(x+10, y+13, 2, 2); ctx.fillRect(x+20, y+13, 2, 2);
+            ctx.fillStyle = '#6B4C2C'; ctx.fillRect(x+14, y+25, 6, 4);
+        }
+        
+        function drawKolobok(x,y) {
+            ctx.fillStyle = '#E8B86B'; ctx.beginPath(); ctx.arc(x+16, y+16, 16, 0, 2*Math.PI); ctx.fill();
+            ctx.fillStyle = '#8B5A2B'; ctx.fillRect(x+8, y+11, 4, 5); ctx.fillRect(x+22, y+11, 4, 5);
+            ctx.fillStyle = '#FFF'; ctx.fillRect(x+8, y+10, 2, 2); ctx.fillRect(x+22, y+10, 2, 2);
+            ctx.fillStyle = '#D2691E'; ctx.beginPath(); ctx.arc(x+16, y+25, 6, 0, Math.PI); ctx.fill();
+        }
+        
+        function drawCat(x,y) {
+            ctx.fillStyle = '#F5AC78'; ctx.fillRect(x+5, y+5, 24, 26);
+            ctx.fillStyle = '#E08E4A'; ctx.beginPath(); ctx.moveTo(x+5, y+5); ctx.lineTo(x, y); ctx.lineTo(x+12, y+5); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(x+29, y+5); ctx.lineTo(x+34, y); ctx.lineTo(x+22, y+5); ctx.fill();
+            ctx.fillStyle = '#000'; ctx.fillRect(x+11, y+13, 4, 5); ctx.fillRect(x+20, y+13, 4, 5);
+            ctx.fillStyle = '#FFF'; ctx.fillRect(x+11, y+12, 2, 2); ctx.fillRect(x+20, y+12, 2, 2);
+            for(let i=0;i<3;i++) ctx.fillRect(x+6+i*8, y+27, 2, 4);
+        }
+        
+        function drawRobot(x,y) {
+            ctx.fillStyle = '#7FC5FF'; ctx.fillRect(x+4, y+3, 26, 28);
+            ctx.fillStyle = '#4C7AB3'; ctx.fillRect(x+10, y-4, 14, 8);
+            ctx.fillStyle = '#000'; ctx.fillRect(x+11, y+12, 4, 5); ctx.fillRect(x+20, y+12, 4, 5);
+            ctx.fillStyle = '#0FF'; ctx.fillRect(x+13, y+22, 8, 4);
+            for(let i=0;i<2;i++) ctx.fillRect(x+7+i*18, y+28, 3, 4);
+        }
+        
+        // ОТРИСОВКА МИРА
         function draw() {
             ctx.clearRect(0, 0, W, H);
             const grad = ctx.createLinearGradient(0, 0, 0, H);
             grad.addColorStop(0, '#0F172A'); grad.addColorStop(1, '#1E293B');
             ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+            
+            // трубы
             for(let p of pipes) {
                 ctx.fillStyle = '#2F6B47CC'; ctx.fillRect(p.x, 0, PIPE_WIDTH, p.topHeight);
-                ctx.fillStyle = '#A8E6A0CC'; ctx.fillRect(p.x+5, p.topHeight-34, PIPE_WIDTH-10, 34);
+                ctx.fillStyle = '#A8E6A0CC'; ctx.fillRect(p.x+5, p.topHeight-38, PIPE_WIDTH-10, 38);
                 ctx.fillStyle = '#2F6B47CC'; ctx.fillRect(p.x, p.bottomY, PIPE_WIDTH, H-p.bottomY);
-                ctx.fillStyle = '#A8E6A0CC'; ctx.fillRect(p.x+5, p.bottomY, PIPE_WIDTH-10, 34);
+                ctx.fillStyle = '#A8E6A0CC'; ctx.fillRect(p.x+5, p.bottomY, PIPE_WIDTH-10, 38);
             }
+            
+            // персонаж
             const char = CHARACTERS.find(c => c.id === currentCharId);
             if(char && char.draw) char.draw(birdX, birdY);
             else drawBird(birdX, birdY);
+            
+            // счёт
             ctx.font = "bold 46px 'Segoe UI'"; ctx.fillStyle = '#FFF7E8'; ctx.shadowBlur = 0;
             ctx.fillText(Math.floor(score), W/2-22, 75);
+            
             if(!gameRunning){
                 ctx.font = "bold 26px 'Segoe UI'"; ctx.fillStyle = '#FFA08C'; ctx.fillText("✦ GAME OVER ✦", W/2-105, H/2-45);
                 ctx.font = "14px monospace"; ctx.fillStyle = '#DDD'; ctx.fillText("нажми «ЗАНОВО»", W/2-62, H/2+20);
@@ -341,11 +357,11 @@
             ctx.font = "bold 12px monospace"; ctx.fillStyle = '#B0E0E6'; ctx.fillText("speed: "+gameSpeed.toFixed(1), W-72, 28);
         }
         
-        // ----- ИГРОВОЙ ЦИКЛ 120fps -----
+        // ЦИКЛ 120fps
         let animFrame;
         function gameLoop() { updateGame(); draw(); animFrame = requestAnimationFrame(gameLoop); }
         
-        // ----- ВЫБОР ПЕРСОНАЖА (с сохранением)-----
+        // ВЫБОР ПЕРСОНАЖА
         function renderCharGrid() {
             const grid = document.getElementById('charGrid');
             grid.innerHTML = '';
@@ -366,7 +382,7 @@
             });
         }
         
-        // ----- НАВИГАЦИЯ -----
+        // НАВИГАЦИЯ
         function showMainMenu() { mainMenu.classList.remove('hidden'); charMenu.classList.add('hidden'); canvas.classList.add('hidden'); gameUI.classList.add('hidden'); if(animFrame) cancelAnimationFrame(animFrame); }
         function showCharMenu() { mainMenu.classList.add('hidden'); charMenu.classList.remove('hidden'); canvas.classList.add('hidden'); gameUI.classList.add('hidden'); if(animFrame) cancelAnimationFrame(animFrame); renderCharGrid(); }
         function startGame() {
@@ -377,7 +393,7 @@
             animFrame = requestAnimationFrame(function loop(){ updateGame(); draw(); animFrame = requestAnimationFrame(loop); });
         }
         
-        // обработчики
+        // ОБРАБОТЧИКИ
         document.getElementById('playBtn').onclick = () => startGame();
         document.getElementById('charactersBtn').onclick = () => showCharMenu();
         document.getElementById('backToMenuBtn').onclick = () => showMainMenu();
@@ -386,7 +402,7 @@
         canvas.addEventListener('click', (e) => { e.preventDefault(); flap(); });
         window.addEventListener('keydown', (e) => { if(e.code === 'Space') { e.preventDefault(); flap(); } });
         
-        // инициализация
+        // СТАРТ
         bestSpan.innerText = bestScore;
         showMainMenu();
         renderCharGrid();
