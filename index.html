@@ -30,7 +30,6 @@
             text-align: center;
         }
 
-        /* Верхняя панель */
         .top-bar {
             display: flex;
             justify-content: space-between;
@@ -64,7 +63,16 @@
             font-size: 16px;
         }
 
-        /* Вопрос */
+        .music-btn {
+            background: #313244;
+            border: none;
+            border-radius: 40px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
         .question {
             font-size: 64px;
             font-weight: bold;
@@ -76,7 +84,6 @@
             letter-spacing: 4px;
         }
 
-        /* Поле ввода */
         .answer-input {
             width: 100%;
             max-width: 200px;
@@ -97,7 +104,6 @@
             ring: 2px solid #89b4fa;
         }
 
-        /* Кнопка */
         .check-btn {
             width: 100%;
             max-width: 250px;
@@ -123,7 +129,6 @@
             transform: none;
         }
 
-        /* Статус */
         .status {
             margin-top: 24px;
             font-size: 18px;
@@ -140,7 +145,6 @@
             color: #f38ba8;
         }
 
-        /* Кнопка сброса */
         .reset-btn {
             background: #45475a;
             color: #cdd6f4;
@@ -152,7 +156,6 @@
             cursor: pointer;
         }
 
-        /* Адаптация для телефона */
         @media (max-width: 480px) {
             .question {
                 font-size: 48px;
@@ -184,27 +187,59 @@
 
     <div class="status" id="status"></div>
 
-    <button id="resetBtn" class="reset-btn">🔄 Сбросить счёт</button>
+    <div class="top-bar" style="justify-content: center; margin-top: 10px;">
+        <button id="musicToggleBtn" class="music-btn">🎵 Выкл</button>
+        <button id="resetBtn" class="reset-btn">🔄 Сбросить счёт</button>
+    </div>
 </div>
 
 <script>
     // --- СОСТОЯНИЕ ИГРЫ ---
     let score = 0;
-    let difficulty = 'easy';     // 'easy' или 'medium'
+    let difficulty = 'easy';
     let currentAnswer = 0;
-    let canAnswer = true;         // блокировка во время паузы
+    let canAnswer = true;
     let currentQuestionText = '';
 
-    // Элементы DOM
-    const questionEl = document.getElementById('question');
-    const answerInput = document.getElementById('answer');
-    const checkBtn = document.getElementById('checkBtn');
-    const statusEl = document.getElementById('status');
-    const scoreEl = document.getElementById('score');
-    const difficultyBtn = document.getElementById('difficultyBtn');
-    const resetBtn = document.getElementById('resetBtn');
+    // --- ФОНОВАЯ МУЗЫКА ---
+    let backgroundMusic;
+    let musicEnabled = false;  // По умолчанию выключена (пользователь сам включит)
 
-    // --- ЗАГРУЗКА СОХРАНЁННОГО СЧЁТА (из localStorage) ---
+    const musicUrl = 'https://raw.githubusercontent.com/TaizerVip/Taizervip.github.io/main/Spokojjnaya_fonovaya_muzyka_onovaya_muzyka_Muzyka_dlya_sna_Rasslablyayushhaya_Muzyka_dlya_Sna_Spokojjnaya_muzyka_dlya_sna_-_Muzyka_bez_slov_dlya_rasslableniya_i_spokojjstviya_80052174.mp3';
+
+    function initMusic() {
+        backgroundMusic = new Audio(musicUrl);
+        backgroundMusic.loop = true;
+        backgroundMusic.volume = 0.25;  // Тихая фоновая музыка
+        
+        // Для iPhone: звук может включиться только после касания
+        document.body.addEventListener('touchstart', () => {
+            if (musicEnabled && backgroundMusic.paused) {
+                backgroundMusic.play().catch(e => console.log('Автовоспроизведение заблокировано'));
+            }
+        }, { once: true });
+    }
+
+    function toggleMusic() {
+        if (!backgroundMusic) {
+            initMusic();
+        }
+        
+        if (musicEnabled) {
+            backgroundMusic.pause();
+            musicEnabled = false;
+            musicToggleBtn.textContent = '🎵 Выкл';
+        } else {
+            backgroundMusic.play().catch(e => {
+                console.log('Не удалось включить музыку:', e);
+                alert('Нажми на экран, чтобы включить музыку');
+            });
+            musicEnabled = true;
+            musicToggleBtn.textContent = '🎵 Вкл';
+        }
+    }
+
+    // --- ЗАГРУЗКА СЧЁТА ---
     function loadScore() {
         const saved = localStorage.getItem('math_trainer_score');
         if (saved !== null && !isNaN(parseInt(saved))) {
@@ -227,10 +262,10 @@
     function generateQuestion() {
         let a, b;
         if (difficulty === 'easy') {
-            a = Math.floor(Math.random() * 90) + 10;   // 10..99
+            a = Math.floor(Math.random() * 90) + 10;
             b = Math.floor(Math.random() * 90) + 10;
         } else {
-            a = Math.floor(Math.random() * 900) + 100; // 100..999
+            a = Math.floor(Math.random() * 900) + 100;
             b = Math.floor(Math.random() * 900) + 100;
         }
 
@@ -239,7 +274,6 @@
             currentQuestionText = `${a} + ${b}`;
             currentAnswer = a + b;
         } else {
-            // Чтобы ответ не был отрицательным
             if (a >= b) {
                 currentQuestionText = `${a} - ${b}`;
                 currentAnswer = a - b;
@@ -251,25 +285,21 @@
         questionEl.textContent = currentQuestionText;
     }
 
-    // --- НОВЫЙ ВОПРОС (очистка и разблокировка) ---
     function newQuestion() {
         canAnswer = true;
         checkBtn.disabled = false;
         answerInput.disabled = false;
         answerInput.value = '';
         statusEl.innerHTML = '';
-        // Возвращаем цвет вопроса в обычный
         questionEl.style.color = '#89b4fa';
         generateQuestion();
         answerInput.focus();
     }
 
-    // --- АНИМАЦИЯ ПРАВИЛЬНОГО ОТВЕТА (зелёный цвет) ---
     function correctAnimation() {
         questionEl.style.color = '#a6e3a1';
     }
 
-    // --- ПРОВЕРКА ОТВЕТА ---
     function checkAnswer() {
         if (!canAnswer) return;
 
@@ -290,13 +320,11 @@
 
         const points = difficulty === 'easy' ? 1 : 2;
 
-        // Блокируем повторные нажатия
         canAnswer = false;
         checkBtn.disabled = true;
         answerInput.disabled = true;
 
         if (userAnswer === currentAnswer) {
-            // ПРАВИЛЬНО
             score += points;
             saveScore();
             updateScoreUI();
@@ -305,25 +333,21 @@
             statusEl.innerHTML = `✅ ПРАВИЛЬНО! +${points} балл(а)`;
             statusEl.className = 'status correct-text';
 
-            // Следующий пример через 0.8 секунды
             setTimeout(() => {
                 newQuestion();
             }, 800);
         } else {
-            // НЕПРАВИЛЬНО
             statusEl.innerHTML = `❌ НЕПРАВИЛЬНО! Ответ: ${currentAnswer}`;
             statusEl.className = 'status wrong-text';
 
-            // Следующий пример через 1.2 секунды
             setTimeout(() => {
                 newQuestion();
             }, 1200);
         }
     }
 
-    // --- СМЕНА СЛОЖНОСТИ ---
     function toggleDifficulty() {
-        if (!canAnswer) return; // нельзя менять во время паузы
+        if (!canAnswer) return;
 
         if (difficulty === 'easy') {
             difficulty = 'medium';
@@ -332,7 +356,6 @@
             difficulty = 'easy';
             difficultyBtn.innerHTML = '🟢 Лёгкий';
         }
-        // Сбрасываем текущий вопрос
         generateQuestion();
         answerInput.value = '';
         statusEl.innerHTML = '';
@@ -340,28 +363,27 @@
         answerInput.focus();
     }
 
-    // --- СБРОС СЧЁТА ---
     function resetScore() {
-        if (!confirm('Сбросить все баллы?')) return;
-        score = 0;
-        saveScore();
-        updateScoreUI();
-        statusEl.innerHTML = '📊 Счёт обнулён';
-        statusEl.className = 'status';
-        setTimeout(() => {
-            if (statusEl.innerHTML === '📊 Счёт обнулён') {
-                statusEl.innerHTML = '';
-            }
-        }, 1500);
+        if (confirm('Сбросить все баллы?')) {
+            score = 0;
+            saveScore();
+            updateScoreUI();
+            statusEl.innerHTML = '📊 Счёт обнулён';
+            statusEl.className = 'status';
+            setTimeout(() => {
+                if (statusEl.innerHTML === '📊 Счёт обнулён') {
+                    statusEl.innerHTML = '';
+                }
+            }, 1500);
+        }
     }
 
-    // --- НАСТРОЙКА ДЛЯ TELEGRAM MINI APP (опционально) ---
+    // --- TELEGRAM MINI APP ---
     function setupTelegram() {
         if (window.Telegram && window.Telegram.WebApp) {
             const tg = window.Telegram.WebApp;
-            tg.expand();                 // развернуть на весь экран
-            tg.enableClosingConfirmation(); // подтверждение при закрытии
-            // Можно также подставить цвет фона
+            tg.expand();
+            tg.enableClosingConfirmation();
             if (tg.themeParams && tg.themeParams.bg_color) {
                 document.body.style.backgroundColor = tg.themeParams.bg_color;
             }
@@ -369,15 +391,26 @@
     }
 
     // --- ИНИЦИАЛИЗАЦИЯ ---
+    const questionEl = document.getElementById('question');
+    const answerInput = document.getElementById('answer');
+    const checkBtn = document.getElementById('checkBtn');
+    const statusEl = document.getElementById('status');
+    const scoreEl = document.getElementById('score');
+    const difficultyBtn = document.getElementById('difficultyBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const musicToggleBtn = document.getElementById('musicToggleBtn');
+
     function init() {
         loadScore();
         generateQuestion();
         setupTelegram();
+        initMusic();
 
-        // Обработчики событий
         checkBtn.addEventListener('click', checkAnswer);
         difficultyBtn.addEventListener('click', toggleDifficulty);
         resetBtn.addEventListener('click', resetScore);
+        musicToggleBtn.addEventListener('click', toggleMusic);
+        
         answerInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -388,7 +421,6 @@
         answerInput.focus();
     }
 
-    // Запускаем игру
     init();
 </script>
 <script src="https://telegram.org/js/telegram-web-app.js?62"></script>
