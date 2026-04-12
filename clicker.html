@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Flappy Premium — анимация смерти</title>
+    <title>Flappy Premium — идеальная версия</title>
     <style>
         * {
             user-select: none;
@@ -15,7 +15,7 @@
 
         body {
             min-height: 100vh;
-            background: linear-gradient(145deg, #0a0e1a 0%, #14182b 100%);
+            background: linear-gradient(145deg, #0a0e1a 0%, #1a2a3a 100%);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -23,40 +23,44 @@
             padding: 20px;
         }
 
-        .premium-container {
-            background: rgba(18, 22, 45, 0.85);
-            backdrop-filter: blur(20px);
-            border-radius: 60px;
-            padding: 24px;
-            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            position: relative;
+        /* ГЛАВНЫЙ КОНТЕЙНЕР */
+        .main-container {
+            background: rgba(10, 20, 35, 0.7);
+            backdrop-filter: blur(12px);
+            border-radius: 50px;
+            padding: 20px;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         canvas {
             display: block;
             margin: 0 auto;
-            border-radius: 32px;
+            border-radius: 28px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
             cursor: pointer;
             background: #0b1120;
+            width: 100%;
+            height: auto;
         }
 
+        /* МЕНЮ */
         .menu {
             text-align: center;
             color: white;
-            min-width: 320px;
+            width: 400px;
+            position: relative;
         }
 
         .menu h1 {
-            font-size: 2.8rem;
+            font-size: 3rem;
             font-weight: 800;
-            margin-bottom: 35px;
-            background: linear-gradient(135deg, #FFE6B0, #FFB347);
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #FFE6B0, #FF8C1A);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            text-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            letter-spacing: 2px;
         }
 
         .menu-buttons {
@@ -64,16 +68,16 @@
             flex-direction: column;
             gap: 18px;
             align-items: center;
-            margin: 25px 0;
+            margin: 30px 0;
         }
 
         .menu-btn {
             background: linear-gradient(95deg, #FFB347, #FF8C1A);
             border: none;
             padding: 14px 45px;
-            width: 260px;
+            width: 240px;
             border-radius: 50px;
-            font-size: 1.4rem;
+            font-size: 1.3rem;
             font-weight: bold;
             color: #1e1a0c;
             cursor: pointer;
@@ -83,59 +87,61 @@
         }
         .menu-btn:active { transform: translateY(2px); box-shadow: 0 3px 0 #8B4500; }
 
+        /* СЕТКА ПЕРСОНАЖЕЙ */
         .characters-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 18px;
-            margin: 30px 0;
+            gap: 15px;
+            margin: 25px 0;
         }
         .char-card {
             background: linear-gradient(145deg, #232842, #1a1e32);
-            border-radius: 40px;
-            padding: 16px 8px;
+            border-radius: 35px;
+            padding: 12px 6px;
             text-align: center;
             cursor: pointer;
             transition: 0.07s linear;
             border: 2px solid rgba(255, 200, 100, 0.6);
-            box-shadow: 0 8px 0 #0b0f1a;
+            box-shadow: 0 6px 0 #0b0f1a;
         }
-        .char-card:active { transform: translateY(2px); box-shadow: 0 4px 0 #0b0f1a; }
+        .char-card:active { transform: translateY(2px); box-shadow: 0 3px 0 #0b0f1a; }
         .char-card.selected {
             border: 3px solid #FFD966;
             background: linear-gradient(145deg, #2f365a, #222845);
             box-shadow: 0 0 15px rgba(255, 200, 80, 0.6);
         }
-        .char-emoji { font-size: 58px; display: block; margin-bottom: 8px; }
-        .char-name { font-size: 1.1rem; font-weight: bold; color: #FFE5B4; margin-bottom: 6px; }
-        .char-badge { font-size: 0.8rem; color: #A5D6FF; background: #0f1322; display: inline-block; padding: 3px 12px; border-radius: 40px; margin-top: 5px; }
+        .char-emoji { font-size: 48px; display: block; margin-bottom: 5px; }
+        .char-name { font-size: 0.9rem; font-weight: bold; color: #FFE5B4; }
+        .char-badge { font-size: 0.7rem; color: #A5D6FF; background: #0f1322; display: inline-block; padding: 2px 10px; border-radius: 30px; margin-top: 5px; }
 
         .back-btn {
             background: #3a405e;
             box-shadow: 0 5px 0 #1e2238;
-            width: 200px;
-            margin-top: 15px;
+            width: 180px;
+            margin-top: 10px;
             color: #f0f0f0;
         }
 
+        /* ИГРОВАЯ ПАНЕЛЬ */
         .game-panel {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 18px;
-            gap: 16px;
+            margin-top: 15px;
+            gap: 12px;
             background: #0c1022cc;
             backdrop-filter: blur(16px);
-            border-radius: 80px;
-            padding: 10px 24px;
+            border-radius: 60px;
+            padding: 8px 20px;
             border: 1px solid rgba(255,215,0,0.4);
         }
         .score-box, .best-box {
             background: #010118cc;
-            padding: 8px 24px;
-            border-radius: 60px;
+            padding: 6px 20px;
+            border-radius: 50px;
             color: #FFE484;
             font-weight: bold;
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             border: 1px solid #ffc107;
             font-family: monospace;
         }
@@ -143,25 +149,30 @@
         .game-btn {
             background: #FFA347;
             border: none;
-            padding: 7px 24px;
+            padding: 6px 20px;
             border-radius: 50px;
             font-weight: bold;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             cursor: pointer;
             box-shadow: 0 3px 0 #a05100;
         }
         .game-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #a05100; }
         .hint {
             background: #000000aa;
-            padding: 6px 16px;
+            padding: 5px 14px;
             border-radius: 50px;
             color: #ddd;
-            font-size: 0.7rem;
-            font-weight: 500;
+            font-size: 0.65rem;
+        }
+        .pause-btn {
+            background: #3a405e;
+            box-shadow: 0 3px 0 #1e2238;
+            font-size: 1rem;
+            padding: 6px 16px;
         }
         .hidden { display: none; }
         
-        /* Кнопка "Начать заново" по центру экрана */
+        /* Кнопка рестарта по центру */
         .restart-overlay {
             position: absolute;
             top: 50%;
@@ -169,44 +180,40 @@
             transform: translate(-50%, -50%);
             background: linear-gradient(135deg, #FFB347, #FF8C1A);
             border: none;
-            padding: 16px 32px;
-            border-radius: 60px;
-            font-size: 1.3rem;
+            padding: 14px 28px;
+            border-radius: 50px;
+            font-size: 1.2rem;
             font-weight: bold;
             color: #1e1a0c;
             cursor: pointer;
-            box-shadow: 0 8px 0 #8B4500;
-            transition: 0.05s linear;
+            box-shadow: 0 6px 0 #8B4500;
             z-index: 100;
-            font-family: inherit;
             white-space: nowrap;
         }
-        .restart-overlay:active {
-            transform: translate(-50%, -50%) translateY(3px);
-            box-shadow: 0 4px 0 #8B4500;
-        }
-        .game-wrapper {
-            position: relative;
-            display: inline-block;
-        }
+        .restart-overlay:active { transform: translate(-50%, -50%) translateY(2px); box-shadow: 0 3px 0 #8B4500; }
+        .game-wrapper { position: relative; display: inline-block; }
     </style>
 </head>
 <body>
-<div id="app" class="premium-container">
+<div class="main-container">
+    <!-- МЕНЮ ГЛАВНОЕ -->
     <div id="mainMenu" class="menu">
         <h1>✨ FLAPPY PREMIUM ✨</h1>
+        <canvas id="menuCanvas" width="400" height="120" style="border-radius: 20px; margin-bottom: 10px;"></canvas>
         <div class="menu-buttons">
             <div class="menu-btn" id="playBtn">🎮 ИГРАТЬ</div>
             <div class="menu-btn" id="charactersBtn">👥 ПЕРСОНАЖИ</div>
         </div>
     </div>
 
+    <!-- ВЫБОР ПЕРСОНАЖА -->
     <div id="charMenu" class="menu hidden">
         <h1>🌟 ВЫБЕРИ ГЕРОЯ</h1>
         <div class="characters-grid" id="charGrid"></div>
         <div class="menu-btn back-btn" id="backToMenuBtn">◀ НАЗАД</div>
     </div>
 
+    <!-- ИГРА -->
     <div id="gameWrapper" class="game-wrapper hidden">
         <canvas id="gameCanvas" width="400" height="600"></canvas>
         <button id="restartOverlayBtn" class="restart-overlay hidden">🔄 НАЧАТЬ ЗАНОВО</button>
@@ -214,8 +221,8 @@
     <div id="gameUI" class="game-panel hidden">
         <div class="score-box">🏆 <span id="scoreValue">0</span></div>
         <div class="best-box">⭐ <span id="bestValue">0</span></div>
-        <span class="hint">🖱️ ПРОБЕЛ / КЛИК — ВЗМАХ</span>
-        <button id="resetGameBtn" class="game-btn">🔄 ЗАНОВО</button>
+        <button id="pauseGameBtn" class="game-btn pause-btn">⏸️ ПАУЗА</button>
+        <span class="hint">🖱️ ПРОБЕЛ / КЛИК</span>
         <button id="menuFromGameBtn" class="game-btn">🏠 МЕНЮ</button>
     </div>
 </div>
@@ -224,11 +231,11 @@
     (function(){
         // ---------- ПЕРСОНАЖИ ----------
         const CHARACTERS = [
-            { id: 'bird', name: 'ПТИЦА', emoji: '🐦', color: '#FFD966', draw: drawBird },
-            { id: 'sponge', name: 'СПАНЧ БОБ', emoji: '🍍', color: '#F4C542', draw: drawSponge },
-            { id: 'kolobok', name: 'КОЛОБОК', emoji: '🍞', color: '#E8B86B', draw: drawKolobok },
-            { id: 'cat', name: 'КОТ', emoji: '🐱', color: '#F5AC78', draw: drawCat },
-            { id: 'robot', name: 'РОБОТ', emoji: '🤖', color: '#7FC5FF', draw: drawRobot }
+            { id: 'bird', name: 'ПТИЦА', emoji: '🐦', draw: drawBird },
+            { id: 'sponge', name: 'СПАНЧ БОБ', emoji: '🍍', draw: drawSponge },
+            { id: 'kolobok', name: 'КОЛОБОК', emoji: '🍞', draw: drawKolobok },
+            { id: 'cat', name: 'КОТ', emoji: '🐱', draw: drawCat },
+            { id: 'robot', name: 'РОБОТ', emoji: '🤖', draw: drawRobot }
         ];
         let currentCharId = localStorage.getItem('flappyChar') || 'bird';
         
@@ -237,20 +244,25 @@
         const charMenu = document.getElementById('charMenu');
         const gameWrapper = document.getElementById('gameWrapper');
         const canvas = document.getElementById('gameCanvas');
+        const menuCanvas = document.getElementById('menuCanvas');
         const gameUI = document.getElementById('gameUI');
         const restartOverlay = document.getElementById('restartOverlayBtn');
         const ctx = canvas.getContext('2d');
+        const menuCtx = menuCanvas.getContext('2d');
         const W = 400, H = 600;
         canvas.width = W; canvas.height = H;
+        menuCanvas.width = 400; menuCanvas.height = 120;
         
         // ИГРОВЫЕ ПАРАМЕТРЫ
         let gameRunning = true;
+        let paused = false;
         let deathAnimation = false;
         let deathTimer = null;
         let score = 0;
         let bestScore = localStorage.getItem('flappyPremiumBest') ? parseInt(localStorage.getItem('flappyPremiumBest')) : 0;
         let birdY = H/2 - 18;
         let birdVel = 0;
+        let birdAngle = 0;
         const GRAVITY = 0.35;
         const JUMP_POWER = -6.2;
         let pipes = [];
@@ -258,15 +270,17 @@
         let gameSpeed = 2.5;
         const BASE_SPEED = 2.5;
         
-        // Размер персонажа
-        const CHAR_WIDTH = 32;
-        const CHAR_HEIGHT = 32;
+        const CHAR_WIDTH = 32, CHAR_HEIGHT = 32;
         const birdX = 70;
         
-        // Анимация смерти: эффект падения и затухания
-        let deathRotation = 0;
-        let deathAlpha = 1;
-        let deathFallY = 0;
+        // Анимация смерти
+        let deathRotation = 0, deathAlpha = 1, deathFallY = 0;
+        
+        // Анимация меню (летящая птица)
+        let menuBirdX = 50;
+        let menuBirdY = 50;
+        let menuBirdVel = 0;
+        let menuFrame = 0;
         
         // UI
         const scoreSpan = document.getElementById('scoreValue');
@@ -287,12 +301,11 @@
         function resetGame() {
             if(deathTimer) clearTimeout(deathTimer);
             deathAnimation = false;
-            deathRotation = 0;
-            deathAlpha = 1;
-            deathFallY = 0;
+            deathRotation = 0; deathAlpha = 1; deathFallY = 0;
             gameRunning = true;
+            paused = false;
             score = 0; updateScoreUI();
-            birdY = H/2 - 18; birdVel = 0;
+            birdY = H/2 - 18; birdVel = 0; birdAngle = 0;
             pipes = []; gameSpeed = BASE_SPEED;
             addPipe(); addPipe();
             if(pipes[0]) pipes[0].x = W;
@@ -300,11 +313,47 @@
             restartOverlay.classList.add('hidden');
         }
         
-        function flap() { if(gameRunning && !deathAnimation) birdVel = JUMP_POWER; }
+        function flap() { 
+            if(gameRunning && !deathAnimation && !paused) {
+                birdVel = JUMP_POWER;
+                birdAngle = -25;
+            }
+        }
         
-        // ЛОГИКА
-        function updateGame() {
+        function togglePause() {
             if(!gameRunning || deathAnimation) return;
+            paused = !paused;
+            const pauseBtn = document.getElementById('pauseGameBtn');
+            pauseBtn.textContent = paused ? '▶️ ИГРАТЬ' : '⏸️ ПАУЗА';
+        }
+        
+        function startDeathAnimation() {
+            if(deathAnimation) return;
+            gameRunning = false;
+            deathAnimation = true;
+            deathRotation = 0;
+            deathAlpha = 1;
+            deathFallY = birdY;
+            saveBest();
+            let fallInterval = setInterval(() => {
+                if(!deathAnimation) { clearInterval(fallInterval); return; }
+                deathFallY += 5;
+                deathRotation += 15;
+                deathAlpha -= 0.04;
+                if(deathFallY > H + 50 || deathAlpha <= 0) {
+                    clearInterval(fallInterval);
+                    deathAnimation = false;
+                    restartOverlay.classList.remove('hidden');
+                }
+            }, 30);
+        }
+        
+        // ЛОГИКА ИГРЫ
+        function updateGame() {
+            if(!gameRunning || deathAnimation || paused) return;
+            
+            // Анимация угла птицы
+            if(birdAngle < 20) birdAngle += 2;
             birdVel += GRAVITY;
             birdY += birdVel;
             
@@ -332,97 +381,77 @@
             if(pipes.length === 0 || pipes[pipes.length-1].x < W - PIPE_SPACING) addPipe();
         }
         
-        function startDeathAnimation() {
-            if(deathAnimation) return;
-            gameRunning = false;
-            deathAnimation = true;
-            deathRotation = 0;
-            deathAlpha = 1;
-            deathFallY = birdY;
-            saveBest();
-            
-            let fallInterval = setInterval(() => {
-                if(!deathAnimation) { clearInterval(fallInterval); return; }
-                deathFallY += 5;
-                deathRotation += 12;
-                deathAlpha -= 0.03;
-                if(deathFallY > H + 50 || deathAlpha <= 0) {
-                    clearInterval(fallInterval);
-                    deathAnimation = false;
-                    restartOverlay.classList.remove('hidden');
-                }
-            }, 30);
-            deathTimer = setTimeout(() => {
-                if(deathTimer) clearInterval(fallInterval);
-            }, 2000);
-        }
-        
-        // ----- ОТРИСОВКА ПЕРСОНАЖЕЙ -----
-        function drawBird(x,y, rot, alpha) {
+        // ОТРИСОВКА ПЕРСОНАЖЕЙ
+        function drawBird(ctx, x, y, rot, alpha, size=1) {
             ctx.save();
             ctx.translate(x+16, y+16);
             ctx.rotate(rot * Math.PI/180);
             ctx.globalAlpha = alpha;
-            ctx.fillStyle = '#FFD966'; ctx.beginPath(); ctx.ellipse(0, 0, 16, 14, 0, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#E69500'; ctx.beginPath(); ctx.ellipse(8, -6, 7, 6, 0, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#000'; ctx.fillRect(9, -7, 4, 5); ctx.fillStyle = 'white'; ctx.fillRect(10, -8, 2, 2);
-            ctx.fillStyle = '#E65C1E'; ctx.beginPath(); ctx.moveTo(-6, 4); ctx.lineTo(-22, -1); ctx.lineTo(-8, 12); ctx.fill();
+            ctx.fillStyle = '#FFD966'; ctx.beginPath(); ctx.ellipse(0, 0, 16*size, 14*size, 0, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#E69500'; ctx.beginPath(); ctx.ellipse(8*size, -6*size, 7*size, 6*size, 0, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#000'; ctx.fillRect(9*size, -7*size, 4*size, 5*size);
+            ctx.fillStyle = '#E65C1E'; ctx.beginPath(); ctx.moveTo(-6*size, 4*size); ctx.lineTo(-22*size, -1*size); ctx.lineTo(-8*size, 12*size); ctx.fill();
             ctx.restore();
         }
         
-        function drawSponge(x,y, rot, alpha) {
+        function drawSponge(ctx, x, y, rot, alpha, size=1) {
             ctx.save();
             ctx.translate(x+16, y+16);
             ctx.rotate(rot * Math.PI/180);
             ctx.globalAlpha = alpha;
-            ctx.fillStyle = '#F7D44A'; ctx.fillRect(-12, -12, 28, 28);
-            ctx.fillStyle = '#B9770E'; for(let i=0;i<4;i++){ ctx.fillRect(-8+i*6, -8, 3, 6); ctx.fillRect(-8+i*6, 4, 3, 6);}
-            ctx.fillStyle = '#000'; ctx.fillRect(-6, -2, 4, 5); ctx.fillRect(4, -2, 4, 5);
-            ctx.fillStyle = '#FFF'; ctx.fillRect(-6, -3, 2, 2); ctx.fillRect(4, -3, 2, 2);
-            ctx.fillStyle = '#6B4C2C'; ctx.fillRect(-2, 9, 6, 4);
+            ctx.fillStyle = '#F7D44A'; ctx.fillRect(-12*size, -12*size, 28*size, 28*size);
+            ctx.fillStyle = '#B9770E';
+            for(let i=0;i<4;i++){ ctx.fillRect((-8+i*6)*size, -8*size, 3*size, 6*size); ctx.fillRect((-8+i*6)*size, 4*size, 3*size, 6*size);}
+            ctx.fillStyle = '#000'; ctx.fillRect(-6*size, -2*size, 4*size, 5*size); ctx.fillRect(4*size, -2*size, 4*size, 5*size);
+            ctx.fillStyle = '#6B4C2C'; ctx.fillRect(-2*size, 9*size, 6*size, 4*size);
             ctx.restore();
         }
         
-        function drawKolobok(x,y, rot, alpha) {
+        function drawKolobok(ctx, x, y, rot, alpha, size=1) {
             ctx.save();
             ctx.translate(x+16, y+16);
             ctx.rotate(rot * Math.PI/180);
             ctx.globalAlpha = alpha;
-            ctx.fillStyle = '#E8B86B'; ctx.beginPath(); ctx.arc(0, 0, 16, 0, 2*Math.PI); ctx.fill();
-            ctx.fillStyle = '#8B5A2B'; ctx.fillRect(-8, -5, 4, 5); ctx.fillRect(6, -5, 4, 5);
-            ctx.fillStyle = '#FFF'; ctx.fillRect(-8, -6, 2, 2); ctx.fillRect(6, -6, 2, 2);
-            ctx.fillStyle = '#D2691E'; ctx.beginPath(); ctx.arc(0, 9, 6, 0, Math.PI); ctx.fill();
+            ctx.fillStyle = '#E8B86B'; ctx.beginPath(); ctx.arc(0, 0, 16*size, 0, 2*Math.PI); ctx.fill();
+            ctx.fillStyle = '#8B5A2B'; ctx.fillRect(-8*size, -5*size, 4*size, 5*size); ctx.fillRect(6*size, -5*size, 4*size, 5*size);
+            ctx.fillStyle = '#D2691E'; ctx.beginPath(); ctx.arc(0, 9*size, 6*size, 0, Math.PI); ctx.fill();
             ctx.restore();
         }
         
-        function drawCat(x,y, rot, alpha) {
+        function drawCat(ctx, x, y, rot, alpha, size=1) {
             ctx.save();
             ctx.translate(x+16, y+16);
             ctx.rotate(rot * Math.PI/180);
             ctx.globalAlpha = alpha;
-            ctx.fillStyle = '#F5AC78'; ctx.fillRect(-11, -11, 24, 26);
-            ctx.fillStyle = '#E08E4A'; ctx.beginPath(); ctx.moveTo(-11, -11); ctx.lineTo(-16, -16); ctx.lineTo(-4, -11); ctx.fill();
-            ctx.beginPath(); ctx.moveTo(13, -11); ctx.lineTo(18, -16); ctx.lineTo(6, -11); ctx.fill();
-            ctx.fillStyle = '#000'; ctx.fillRect(-5, -3, 4, 5); ctx.fillRect(4, -3, 4, 5);
-            ctx.fillStyle = '#FFF'; ctx.fillRect(-5, -4, 2, 2); ctx.fillRect(4, -4, 2, 2);
-            for(let i=0;i<3;i++) ctx.fillRect(-10+i*8, 11, 2, 4);
+            ctx.fillStyle = '#F5AC78'; ctx.fillRect(-11*size, -11*size, 24*size, 26*size);
+            ctx.fillStyle = '#E08E4A';
+            ctx.beginPath(); ctx.moveTo(-11*size, -11*size); ctx.lineTo(-16*size, -16*size); ctx.lineTo(-4*size, -11*size); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(13*size, -11*size); ctx.lineTo(18*size, -16*size); ctx.lineTo(6*size, -11*size); ctx.fill();
+            ctx.fillStyle = '#000'; ctx.fillRect(-5*size, -3*size, 4*size, 5*size); ctx.fillRect(4*size, -3*size, 4*size, 5*size);
+            for(let i=0;i<3;i++) ctx.fillRect((-10+i*8)*size, 11*size, 2*size, 4*size);
             ctx.restore();
         }
         
-        function drawRobot(x,y, rot, alpha) {
+        function drawRobot(ctx, x, y, rot, alpha, size=1) {
             ctx.save();
             ctx.translate(x+16, y+16);
             ctx.rotate(rot * Math.PI/180);
             ctx.globalAlpha = alpha;
-            ctx.fillStyle = '#7FC5FF'; ctx.fillRect(-12, -13, 26, 28);
-            ctx.fillStyle = '#4C7AB3'; ctx.fillRect(-6, -20, 14, 8);
-            ctx.fillStyle = '#000'; ctx.fillRect(-5, -4, 4, 5); ctx.fillRect(4, -4, 4, 5);
-            ctx.fillStyle = '#0FF'; ctx.fillRect(-3, 6, 8, 4);
-            for(let i=0;i<2;i++) ctx.fillRect(-9+i*18, 12, 3, 4);
+            ctx.fillStyle = '#7FC5FF'; ctx.fillRect(-12*size, -13*size, 26*size, 28*size);
+            ctx.fillStyle = '#4C7AB3'; ctx.fillRect(-6*size, -20*size, 14*size, 8*size);
+            ctx.fillStyle = '#000'; ctx.fillRect(-5*size, -4*size, 4*size, 5*size); ctx.fillRect(4*size, -4*size, 4*size, 5*size);
+            ctx.fillStyle = '#0FF'; ctx.fillRect(-3*size, 6*size, 8*size, 4*size);
+            for(let i=0;i<2;i++) ctx.fillRect((-9+i*18)*size, 12*size, 3*size, 4*size);
             ctx.restore();
         }
         
-        // ОТРИСОВКА МИРА
+        function drawCurrentChar(ctx, x, y, rot, alpha, size=1) {
+            const char = CHARACTERS.find(c => c.id === currentCharId);
+            if(char && char.draw) char.draw(ctx, x, y, rot, alpha, size);
+            else drawBird(ctx, x, y, rot, alpha, size);
+        }
+        
+        // ОТРИСОВКА ИГРЫ
         function draw() {
             ctx.clearRect(0, 0, W, H);
             const grad = ctx.createLinearGradient(0, 0, 0, H);
@@ -436,29 +465,51 @@
                 ctx.fillStyle = '#A8E6A0CC'; ctx.fillRect(p.x+5, p.bottomY, PIPE_WIDTH-10, 38);
             }
             
-            const char = CHARACTERS.find(c => c.id === currentCharId);
             if(deathAnimation) {
-                if(char && char.draw) {
-                    char.draw(birdX, deathFallY, deathRotation, deathAlpha);
-                } else {
-                    drawBird(birdX, deathFallY, deathRotation, deathAlpha);
-                }
+                drawCurrentChar(ctx, birdX, deathFallY, deathRotation, deathAlpha);
             } else {
-                if(char && char.draw) {
-                    char.draw(birdX, birdY, 0, 1);
-                } else {
-                    drawBird(birdX, birdY, 0, 1);
-                }
+                drawCurrentChar(ctx, birdX, birdY, birdAngle, 1);
             }
             
-            ctx.font = "bold 46px 'Segoe UI'"; ctx.fillStyle = '#FFF7E8'; ctx.shadowBlur = 0;
+            ctx.font = "bold 46px 'Segoe UI'"; ctx.fillStyle = '#FFF7E8';
             ctx.fillText(Math.floor(score), W/2-22, 75);
-            ctx.font = "bold 12px monospace"; ctx.fillStyle = '#B0E0E6'; ctx.fillText("speed: "+gameSpeed.toFixed(1), W-72, 28);
+            ctx.font = "bold 12px monospace"; ctx.fillStyle = '#B0E0E6';
+            ctx.fillText("speed: "+gameSpeed.toFixed(1), W-72, 28);
+            
+            if(paused && !deathAnimation && gameRunning) {
+                ctx.font = "bold 28px 'Segoe UI'"; ctx.fillStyle = '#FFE484';
+                ctx.fillText("⏸ ПАУЗА", W/2-55, H/2);
+            }
         }
         
-        // ЦИКЛ
+        // МЕНЮ С ЛЕТЯЩЕЙ ПТИЦЕЙ
+        function drawMenu() {
+            menuCtx.clearRect(0, 0, 400, 120);
+            const grad = menuCtx.createLinearGradient(0, 0, 0, 120);
+            grad.addColorStop(0, '#1E3A5F'); grad.addColorStop(1, '#0F2A4A');
+            menuCtx.fillStyle = grad; menuCtx.fillRect(0, 0, 400, 120);
+            
+            // Облака
+            menuCtx.fillStyle = 'rgba(255,255,240,0.3)';
+            menuCtx.beginPath(); menuCtx.ellipse(80, 30, 35, 25, 0, 0, Math.PI*2); menuCtx.fill();
+            menuCtx.beginPath(); menuCtx.ellipse(320, 50, 40, 28, 0, 0, Math.PI*2); menuCtx.fill();
+            
+            // Летящая птица
+            menuBirdVel += 0.15;
+            menuBirdX += 2;
+            menuBirdY = 50 + Math.sin(menuFrame * 0.1) * 8;
+            if(menuBirdX > 380) menuBirdX = 20;
+            drawCurrentChar(menuCtx, menuBirdX, menuBirdY, Math.sin(menuFrame * 0.2) * 15, 1, 0.7);
+            menuFrame++;
+            
+            menuCtx.font = "bold 18px monospace"; menuCtx.fillStyle = '#FFE484';
+            menuCtx.fillText("🐦 ЛЕТИ ВПЕРЁД!", 140, 90);
+        }
+        
+        // ЦИКЛЫ
         let animFrame;
         function gameLoop() { updateGame(); draw(); animFrame = requestAnimationFrame(gameLoop); }
+        function menuLoop() { drawMenu(); requestAnimationFrame(menuLoop); }
         
         // ВЫБОР ПЕРСОНАЖА
         function renderCharGrid() {
@@ -467,16 +518,10 @@
             CHARACTERS.forEach(char => {
                 const card = document.createElement('div');
                 card.className = `char-card ${currentCharId === char.id ? 'selected' : ''}`;
-                card.innerHTML = `
-                    <span class="char-emoji">${char.emoji}</span>
+                card.innerHTML = `<div class="char-emoji">${char.emoji}</div>
                     <div class="char-name">${char.name}</div>
-                    <div class="char-badge">${currentCharId === char.id ? '✅ ВЫБРАН' : '▼ ВЫБРАТЬ'}</div>
-                `;
-                card.onclick = () => {
-                    currentCharId = char.id;
-                    localStorage.setItem('flappyChar', currentCharId);
-                    renderCharGrid(); 
-                };
+                    <div class="char-badge">${currentCharId === char.id ? '✅ ВЫБРАН' : '▼ ВЫБРАТЬ'}</div>`;
+                card.onclick = () => { currentCharId = char.id; localStorage.setItem('flappyChar', currentCharId); renderCharGrid(); };
                 grid.appendChild(card);
             });
         }
@@ -497,7 +542,7 @@
         document.getElementById('charactersBtn').onclick = () => showCharMenu();
         document.getElementById('backToMenuBtn').onclick = () => showMainMenu();
         document.getElementById('menuFromGameBtn').onclick = () => { if(animFrame) cancelAnimationFrame(animFrame); showMainMenu(); };
-        document.getElementById('resetGameBtn').onclick = () => { resetGame(); };
+        document.getElementById('pauseGameBtn').onclick = () => togglePause();
         restartOverlay.onclick = () => { resetGame(); };
         canvas.addEventListener('click', (e) => { e.preventDefault(); flap(); });
         window.addEventListener('keydown', (e) => { if(e.code === 'Space') { e.preventDefault(); flap(); } });
@@ -505,6 +550,7 @@
         bestSpan.innerText = bestScore;
         showMainMenu();
         renderCharGrid();
+        menuLoop();
     })();
 </script>
 </body>
