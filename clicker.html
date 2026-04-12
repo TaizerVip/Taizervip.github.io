@@ -3,90 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Flappy Bird — лети между трубами</title>
+    <title>Flappy Bird — Liquid Glass</title>
     <style>
         * {
             user-select: none;
             -webkit-tap-highlight-color: transparent;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            margin: 0;
             min-height: 100vh;
-            background: linear-gradient(135deg, #0b2b3b, #1a4a6f);
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: 'Courier New', 'Segoe UI', monospace;
+            font-family: 'Segoe UI', 'Poppins', 'Courier New', monospace;
+            padding: 20px;
         }
 
+        /* LIQUID GLASS контейнер */
         .game-container {
-            background: #0d2b2f;
-            border-radius: 28px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            border-radius: 48px;
             padding: 20px;
-            box-shadow: 0 20px 35px rgba(0,0,0,0.5);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         canvas {
             display: block;
             margin: 0 auto;
-            border-radius: 20px;
-            box-shadow: 0 8px 18px rgba(0,0,0,0.3);
+            border-radius: 28px;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.4);
             cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        canvas:active {
+            transform: scale(0.99);
         }
 
         .info {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 16px;
-            gap: 16px;
+            margin-top: 18px;
+            gap: 15px;
             flex-wrap: wrap;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(8px);
+            border-radius: 60px;
+            padding: 8px 20px;
         }
 
         .score-box, .best-box {
-            background: #071a1c;
-            padding: 6px 18px;
-            border-radius: 50px;
-            color: #f5e56b;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            padding: 6px 20px;
+            border-radius: 40px;
+            color: #f9f3c1;
             font-weight: bold;
             font-size: 1.3rem;
             font-family: monospace;
+            letter-spacing: 1px;
+            border: 1px solid rgba(255,215,0,0.4);
         }
 
         .best-box {
-            color: #a3e4a1;
+            color: #c2f2c2;
+            border-color: rgba(100,255,100,0.4);
         }
 
         button {
-            background: #f5b042;
+            background: rgba(255, 180, 70, 0.85);
+            backdrop-filter: blur(8px);
             border: none;
             font-size: 1rem;
             font-weight: bold;
-            padding: 6px 22px;
+            padding: 6px 24px;
             border-radius: 60px;
             cursor: pointer;
             font-family: inherit;
-            transition: transform 0.1s;
-            box-shadow: 0 3px 0 #a05e15;
+            transition: all 0.15s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            color: #1f2a1b;
         }
 
         button:active {
-            transform: scale(0.96);
+            transform: scale(0.94);
+            background: #f5a623;
         }
 
         .controls {
             display: flex;
-            gap: 15px;
+            gap: 12px;
             align-items: center;
         }
 
         .hint {
-            background: #072226;
-            padding: 5px 12px;
-            border-radius: 50px;
-            color: #bbe0df;
-            font-size: 0.8rem;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            padding: 5px 14px;
+            border-radius: 40px;
+            color: #caf0f8;
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+        
+        @media (max-width: 500px) {
+            .score-box, .best-box { font-size: 1rem; padding: 4px 14px; }
+            .hint { font-size: 0.65rem; }
+            button { padding: 5px 18px; }
         }
     </style>
 </head>
@@ -107,44 +138,39 @@
 
 <script>
     (function(){
-        // -------- НАСТРОЙКИ --------
+        // -------- ХОЛСТ --------
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        
-        // РАЗМЕРЫ
         const W = 400, H = 600;
         canvas.width = W;
         canvas.height = H;
         
-        // ПТИЦА
+        // -------- ПТИЦА --------
         const BIRD_SIZE = 24;
         let birdX = 70;
         let birdY = H/2 - BIRD_SIZE/2;
         let birdVel = 0;
-        const GRAVITY = 0.2;
-        const JUMP_POWER = -4.5;
+        const GRAVITY = 0.22;
+        const JUMP_POWER = -4.8;
         
-        // ТРУБЫ
+        // -------- ТРУБЫ (исправленный алгоритм) --------
         let pipes = [];
-        const PIPE_WIDTH = 60;
-        const PIPE_GAP = 130;
-        const PIPE_SPACING = 220;   // расстояние между трубами
-        let frameCounter = 0;
-        let pipeSpawnCounter = 0;
-        let baseSpeed = 2.2;
-        let gameSpeed = baseSpeed;
+        const PIPE_WIDTH = 58;
+        const PIPE_GAP = 150;          // гарантированный просвет (было 130 -> 150)
+        const PIPE_SPACING = 210;       // дистанция между трубами
+        let gameSpeed = 2.4;
+        const BASE_SPEED = 2.4;
         
-        // ИГРОВЫЕ ФЛАГИ
+        // -------- ИГРОВОЕ СОСТОЯНИЕ --------
         let gameRunning = true;
         let score = 0;
-        let bestScore = localStorage.getItem('flappyBest') ? parseInt(localStorage.getItem('flappyBest')) : 0;
+        let bestScore = localStorage.getItem('flappyGlassBest') ? parseInt(localStorage.getItem('flappyGlassBest')) : 0;
         
-        // Элементы UI
+        // UI элементы
         const scoreSpan = document.getElementById('scoreValue');
         const bestSpan = document.getElementById('bestValue');
         bestSpan.innerText = bestScore;
         
-        // -------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ --------
         function updateScoreUI() {
             scoreSpan.innerText = Math.floor(score);
         }
@@ -154,17 +180,20 @@
         }
         
         function saveBest() {
-            if(Math.floor(score) > bestScore) {
-                bestScore = Math.floor(score);
-                localStorage.setItem('flappyBest', bestScore);
+            let intScore = Math.floor(score);
+            if(intScore > bestScore) {
+                bestScore = intScore;
+                localStorage.setItem('flappyGlassBest', bestScore);
                 updateBestUI();
             }
         }
         
-        // -------- СОЗДАНИЕ ТРУБЫ --------
+        // -------- ГЕНЕРАЦИЯ ТРУБЫ (исправлено: гарантированный проход) --------
         function addPipe() {
-            let minTop = 80;
-            let maxTop = H - PIPE_GAP - 80;
+            // ограничиваем верхнюю трубу: минимум 60, максимум H - PIPE_GAP - 70
+            let minTop = 70;
+            let maxTop = H - PIPE_GAP - 70;
+            if(maxTop < minTop) maxTop = minTop + 20;
             let topHeight = Math.floor(Math.random() * (maxTop - minTop + 1) + minTop);
             pipes.push({
                 x: W,
@@ -174,7 +203,7 @@
             });
         }
         
-        // -------- СБРОС ИГРЫ --------
+        // -------- ПОЛНЫЙ СБРОС --------
         function resetGame() {
             gameRunning = true;
             score = 0;
@@ -182,42 +211,40 @@
             birdY = H/2 - BIRD_SIZE/2;
             birdVel = 0;
             pipes = [];
-            frameCounter = 0;
-            pipeSpawnCounter = 0;
-            gameSpeed = baseSpeed;
-            // сразу добавим пару труб
+            gameSpeed = BASE_SPEED;
+            // создаём первые трубы, чтобы не было пустоты
             addPipe();
             addPipe();
+            // корректировка позиций, чтобы первая труба не сразу в птицу
+            if(pipes[0]) pipes[0].x = W;
+            if(pipes[1]) pipes[1].x = W + PIPE_SPACING;
         }
         
-        // -------- ПРЫЖОК (ВЗМАХ) --------
+        // -------- ВЗМАХ --------
         function flap() {
             if(!gameRunning) return;
             birdVel = JUMP_POWER;
-            // небольшой эффект хвоста
         }
         
-        // -------- ОБНОВЛЕНИЕ ЛОГИКИ --------
+        // -------- ЛОГИКА ОБНОВЛЕНИЯ (столкновения + счёт) --------
         function updateGame() {
             if(!gameRunning) return;
             
             // 1. ПТИЦА
             birdVel += GRAVITY;
             birdY += birdVel;
-            
-            // границы (верх/низ) — смерть
             if(birdY <= 0 || birdY + BIRD_SIZE >= H) {
                 gameRunning = false;
                 saveBest();
                 return;
             }
             
-            // 2. ТРУБЫ: движение и столкновения
+            // 2. ТРУБЫ (движение и столкновения)
             for(let i=0; i<pipes.length; i++) {
                 const p = pipes[i];
                 p.x -= gameSpeed;
                 
-                // СТОЛКНОВЕНИЕ с трубой
+                // СТОЛКНОВЕНИЕ (только если игра активна)
                 if(birdX + BIRD_SIZE > p.x && birdX < p.x + PIPE_WIDTH) {
                     if(birdY < p.topHeight || birdY + BIRD_SIZE > p.bottomY) {
                         gameRunning = false;
@@ -226,114 +253,118 @@
                     }
                 }
                 
-                // УВЕЛИЧЕНИЕ СЧЁТА (когда птица пролетела трубу)
+                // ПОДСЧЁТ ОЧКОВ (когда птица миновала трубу)
                 if(!p.counted && birdX > p.x + PIPE_WIDTH) {
                     p.counted = true;
                     score += 1;
                     updateScoreUI();
                     saveBest();
-                    // увеличиваем скорость со временем
-                    if(gameSpeed < 5) {
-                        gameSpeed = baseSpeed + Math.floor(score / 18) * 0.2;
-                        if(gameSpeed > 5) gameSpeed = 5;
+                    // ПЛАВНОЕ УВЕЛИЧЕНИЕ СКОРОСТИ (макс 5.5)
+                    if(gameSpeed < 5.5) {
+                        gameSpeed = BASE_SPEED + Math.floor(score / 20) * 0.18;
+                        if(gameSpeed > 5.5) gameSpeed = 5.5;
                     }
                 }
             }
             
-            // удаляем ушедшие трубы
+            // удалить трубы, ушедшие за экран
             pipes = pipes.filter(p => p.x + PIPE_WIDTH > 0);
             
-            // 3. ГЕНЕРАЦИЯ НОВЫХ ТРУБ (каждые ~90 кадров)
+            // 3. ГЕНЕРАЦИЯ НОВЫХ ТРУБ (чёткий интервал)
             if(pipes.length === 0 || pipes[pipes.length-1].x < W - PIPE_SPACING) {
                 addPipe();
             }
         }
         
-        // -------- ОТРИСОВКА ВСЕГО --------
+        // -------- СОВРЕМЕННАЯ ОТРИСОВКА (Liquid Glass + неон) --------
         function draw() {
             ctx.clearRect(0, 0, W, H);
             
-            // 1. НЕБО (градиент)
-            const grad = ctx.createLinearGradient(0, 0, 0, H);
-            grad.addColorStop(0, '#2c7da0');
-            grad.addColorStop(1, '#1f5068');
+            // ---- ЖИДКОСТЕКЛЯННЫЙ ФОН (градиент + свечение) ----
+            const grad = ctx.createLinearGradient(0, 0, W*0.8, H);
+            grad.addColorStop(0, '#0e153a');
+            grad.addColorStop(0.5, '#1d2b64');
+            grad.addColorStop(1, '#1b2a4e');
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, W, H);
             
-            // 2. ОБЛАКА
-            ctx.fillStyle = 'rgba(255,255,240,0.7)';
-            ctx.beginPath();
-            ctx.ellipse(80, 80, 35, 28, 0, 0, Math.PI*2);
-            ctx.ellipse(110, 70, 30, 25, 0, 0, Math.PI*2);
-            ctx.ellipse(50, 75, 28, 24, 0, 0, Math.PI*2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.ellipse(300, 150, 40, 32, 0, 0, Math.PI*2);
-            ctx.ellipse(340, 140, 32, 28, 0, 0, Math.PI*2);
-            ctx.fill();
-            
-            // 3. ТРУБЫ (зелёные, с тенью)
+            // стиль "стеклянные трубы" с неон-обводкой
             for(let p of pipes) {
-                // верхняя труба
-                ctx.fillStyle = '#2f6b47';
+                // верхняя труба (полупрозрачная с эффектом стекла)
+                ctx.fillStyle = 'rgba(80, 180, 100, 0.65)';
                 ctx.fillRect(p.x, 0, PIPE_WIDTH, p.topHeight);
-                ctx.fillStyle = '#1f4a2f';
-                ctx.fillRect(p.x-5, p.topHeight-35, PIPE_WIDTH+10, 35);
-                ctx.fillStyle = '#8fbf5e';
-                ctx.fillRect(p.x-3, p.topHeight-30, PIPE_WIDTH+6, 25);
+                ctx.fillStyle = 'rgba(200, 255, 150, 0.5)';
+                ctx.fillRect(p.x+4, p.topHeight-38, PIPE_WIDTH-8, 38);
+                ctx.strokeStyle = '#bbffaa';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(p.x+2, p.topHeight-36, PIPE_WIDTH-4, 32);
                 
                 // нижняя труба
-                ctx.fillStyle = '#2f6b47';
+                ctx.fillStyle = 'rgba(80, 180, 100, 0.65)';
                 ctx.fillRect(p.x, p.bottomY, PIPE_WIDTH, H - p.bottomY);
-                ctx.fillStyle = '#1f4a2f';
-                ctx.fillRect(p.x-5, p.bottomY, PIPE_WIDTH+10, 35);
-                ctx.fillStyle = '#8fbf5e';
-                ctx.fillRect(p.x-3, p.bottomY+5, PIPE_WIDTH+6, 25);
+                ctx.fillStyle = 'rgba(200, 255, 150, 0.5)';
+                ctx.fillRect(p.x+4, p.bottomY, PIPE_WIDTH-8, 38);
+                ctx.strokeStyle = '#bbffaa';
+                ctx.strokeRect(p.x+2, p.bottomY+4, PIPE_WIDTH-4, 32);
             }
             
-            // 4. ПТИЦА (жёлтая с глазом)
-            ctx.fillStyle = '#f7d44a';
+            // ПТИЦА — сияющий кристалл
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = '#ffd966';
+            ctx.fillStyle = '#ffcd6b';
             ctx.beginPath();
             ctx.ellipse(birdX + BIRD_SIZE/2, birdY + BIRD_SIZE/2, BIRD_SIZE/1.8, BIRD_SIZE/1.6, 0, 0, Math.PI*2);
             ctx.fill();
-            ctx.fillStyle = '#e09d2c';
+            ctx.fillStyle = '#ffaa33';
             ctx.beginPath();
-            ctx.ellipse(birdX + BIRD_SIZE-6, birdY + 8, 5, 4, 0, 0, Math.PI*2);
+            ctx.ellipse(birdX + BIRD_SIZE-6, birdY + 9, 6, 5, 0, 0, Math.PI*2);
             ctx.fill();
-            ctx.fillStyle = '#000';
-            ctx.fillRect(birdX + BIRD_SIZE-4, birdY + 7, 3, 4);
-            ctx.fillStyle = '#ff6b4a';
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(birdX + BIRD_SIZE-4, birdY + 8, 3, 5);
+            ctx.fillStyle = 'white';
+            ctx.fillRect(birdX + BIRD_SIZE-3, birdY + 7, 1, 2);
+            ctx.fillStyle = '#ff7744';
             ctx.beginPath();
-            ctx.moveTo(birdX + 4, birdY + 12);
-            ctx.lineTo(birdX - 6, birdY + 10);
-            ctx.lineTo(birdX + 2, birdY + 16);
+            ctx.moveTo(birdX + 5, birdY + 14);
+            ctx.lineTo(birdX - 8, birdY + 12);
+            ctx.lineTo(birdX + 3, birdY + 19);
             ctx.fill();
-            
-            // 5. СЧЁТ НА ЭКРАНЕ (крупно)
-            ctx.font = "bold 36px monospace";
-            ctx.fillStyle = "#f9eeb0";
-            ctx.shadowBlur = 4;
-            ctx.shadowColor = "black";
-            ctx.fillText(Math.floor(score), W/2-15, 70);
             ctx.shadowBlur = 0;
             
-            // 6. GAME OVER
-            if(!gameRunning) {
-                ctx.font = "bold 28px monospace";
-                ctx.fillStyle = "#d9372c";
-                ctx.fillText("GAME OVER", W/2-95, H/2-50);
-                ctx.font = "16px monospace";
-                ctx.fillStyle = "#eeeeee";
-                ctx.fillText("нажми «ЗАНОВО»", W/2-65, H/2+20);
+            // ЭФФЕКТ СТЕКЛЯННЫХ БЛИКОВ
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.fillStyle = 'rgba(255,255,210,0.1)';
+            for(let i=0;i<3;i++) {
+                ctx.fillRect(40+i*100, 30, 60, 8);
             }
+            ctx.globalCompositeOperation = 'source-over';
             
-            // подсказка скорости
+            // СЧЁТ крупно (неон)
+            ctx.font = "bold 44px 'Segoe UI', 'Courier New'";
+            ctx.shadowBlur = 6;
+            ctx.shadowColor = "#00ffff";
+            ctx.fillStyle = "#f2f0b0";
+            ctx.fillText(Math.floor(score), W/2-22, 80);
+            
+            // GAME OVER стиль
+            if(!gameRunning) {
+                ctx.font = "bold 28px 'Segoe UI'";
+                ctx.fillStyle = "#ff869e";
+                ctx.shadowColor = "#ff0000";
+                ctx.fillText("✦ GAME OVER ✦", W/2-105, H/2-45);
+                ctx.font = "14px monospace";
+                ctx.fillStyle = "#faf0b0";
+                ctx.fillText("нажми «ЗАНОВО»", W/2-58, H/2+20);
+            }
+            ctx.shadowBlur = 0;
+            
+            // скорость (прозрачный текст)
             ctx.font = "12px monospace";
-            ctx.fillStyle = "#e4ffd1";
-            ctx.fillText("speed: "+gameSpeed.toFixed(1), W-65, 25);
+            ctx.fillStyle = "#b3ffe0";
+            ctx.fillText("⚡ speed: "+gameSpeed.toFixed(1), W-72, 27);
         }
         
-        // -------- ИГРОВОЙ ЦИКЛ --------
+        // -------- ЦИКЛ --------
         function gameLoop() {
             updateGame();
             draw();
@@ -345,20 +376,16 @@
             e.preventDefault();
             flap();
         });
-        
         window.addEventListener('keydown', (e) => {
             if(e.code === 'Space') {
                 e.preventDefault();
                 flap();
             }
         });
-        
         document.getElementById('resetGameBtn').addEventListener('click', () => {
             resetGame();
         });
-        
-        // блокируем скролл пробелом
-        window.addEventListener('keydown', function(e) {
+        window.addEventListener('keydown', (e) => {
             if(e.code === 'Space') e.preventDefault();
         });
         
