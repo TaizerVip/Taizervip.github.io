@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Flappy Bird — Liquid Glass</title>
     <style>
         * {
@@ -15,109 +15,113 @@
 
         body {
             min-height: 100vh;
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            background: linear-gradient(135deg, #0f0c29, #1a1a3e, #0b1120);
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: 'Segoe UI', 'Poppins', 'Courier New', monospace;
-            padding: 20px;
+            font-family: 'Segoe UI', 'Poppins', 'Inter', system-ui, -apple-system, sans-serif;
+            padding: 16px;
         }
 
-        /* LIQUID GLASS контейнер */
+        /* LIQUID GLASS контейнер — матовое стекло */
         .game-container {
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(12px);
-            border-radius: 48px;
-            padding: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            background: rgba(20, 25, 55, 0.35);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 52px;
+            padding: 18px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.15);
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         canvas {
             display: block;
             margin: 0 auto;
-            border-radius: 28px;
-            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.4);
+            border-radius: 32px;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.5);
             cursor: pointer;
-            transition: transform 0.2s;
-        }
-        
-        canvas:active {
-            transform: scale(0.99);
+            will-change: transform;
         }
 
+        /* СТЕКЛЯННАЯ ПАНЕЛЬ */
         .info {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-top: 18px;
-            gap: 15px;
+            gap: 14px;
             flex-wrap: wrap;
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(8px);
+            background: rgba(10, 15, 35, 0.45);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border-radius: 60px;
-            padding: 8px 20px;
+            padding: 8px 22px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .score-box, .best-box {
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             padding: 6px 20px;
-            border-radius: 40px;
-            color: #f9f3c1;
-            font-weight: bold;
+            border-radius: 48px;
+            color: #fff7e8;
+            font-weight: 600;
             font-size: 1.3rem;
-            font-family: monospace;
             letter-spacing: 1px;
-            border: 1px solid rgba(255,215,0,0.4);
+            border: 1px solid rgba(255, 215, 100, 0.5);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
 
         .best-box {
-            color: #c2f2c2;
-            border-color: rgba(100,255,100,0.4);
+            border-color: rgba(120, 220, 120, 0.5);
+            color: #e2f5e2;
         }
 
         button {
-            background: rgba(255, 180, 70, 0.85);
+            background: rgba(245, 180, 70, 0.85);
             backdrop-filter: blur(8px);
-            border: none;
-            font-size: 1rem;
-            font-weight: bold;
-            padding: 6px 24px;
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,200,0.4);
+            font-size: 0.95rem;
+            font-weight: 600;
+            padding: 6px 26px;
             border-radius: 60px;
             cursor: pointer;
-            font-family: inherit;
-            transition: all 0.15s;
+            transition: all 0.1s ease;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            color: #1f2a1b;
+            color: #1e2b1a;
         }
 
         button:active {
-            transform: scale(0.94);
+            transform: scale(0.95);
             background: #f5a623;
         }
 
         .controls {
             display: flex;
-            gap: 12px;
+            gap: 14px;
             align-items: center;
         }
 
         .hint {
             background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
-            padding: 5px 14px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            padding: 5px 16px;
             border-radius: 40px;
             color: #caf0f8;
             font-size: 0.75rem;
             font-weight: 500;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
+            border: 1px solid rgba(255,255,210,0.3);
         }
         
         @media (max-width: 500px) {
             .score-box, .best-box { font-size: 1rem; padding: 4px 14px; }
-            .hint { font-size: 0.65rem; }
-            button { padding: 5px 18px; }
+            .hint { font-size: 0.65rem; padding: 4px 12px; }
+            button { padding: 5px 20px; font-size: 0.85rem; }
+            .game-container { padding: 12px; }
         }
     </style>
 </head>
@@ -138,38 +142,41 @@
 
 <script>
     (function(){
-        // -------- ХОЛСТ --------
+        // ---------- ХОЛСТ (фиксированное разрешение, но рендер без рывков) ----------
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const W = 400, H = 600;
         canvas.width = W;
         canvas.height = H;
         
-        // -------- ПТИЦА --------
+        // ---------- ПТИЦА ----------
         const BIRD_SIZE = 24;
         let birdX = 70;
         let birdY = H/2 - BIRD_SIZE/2;
         let birdVel = 0;
         const GRAVITY = 0.22;
-        const JUMP_POWER = -4.8;
+        const JUMP_POWER = -4.9;
         
-        // -------- ТРУБЫ (исправленный алгоритм) --------
+        // ---------- ТРУБЫ (оптимизированные, фиксированный просвет) ----------
         let pipes = [];
-        const PIPE_WIDTH = 58;
-        const PIPE_GAP = 150;          // гарантированный просвет (было 130 -> 150)
-        const PIPE_SPACING = 210;       // дистанция между трубами
+        const PIPE_WIDTH = 56;
+        const PIPE_GAP = 152;        // надёжный проход
+        const PIPE_SPACING = 210;     
         let gameSpeed = 2.4;
         const BASE_SPEED = 2.4;
         
-        // -------- ИГРОВОЕ СОСТОЯНИЕ --------
+        // Игровое состояние
         let gameRunning = true;
         let score = 0;
-        let bestScore = localStorage.getItem('flappyGlassBest') ? parseInt(localStorage.getItem('flappyGlassBest')) : 0;
+        let bestScore = localStorage.getItem('flappyLiquidBest') ? parseInt(localStorage.getItem('flappyLiquidBest')) : 0;
         
-        // UI элементы
+        // UI
         const scoreSpan = document.getElementById('scoreValue');
         const bestSpan = document.getElementById('bestValue');
         bestSpan.innerText = bestScore;
+        
+        // Флаг для плавности — предотвращаем лишние перерисовки столкновений
+        let collisionCooldown = false;
         
         function updateScoreUI() {
             scoreSpan.innerText = Math.floor(score);
@@ -183,17 +190,16 @@
             let intScore = Math.floor(score);
             if(intScore > bestScore) {
                 bestScore = intScore;
-                localStorage.setItem('flappyGlassBest', bestScore);
+                localStorage.setItem('flappyLiquidBest', bestScore);
                 updateBestUI();
             }
         }
         
-        // -------- ГЕНЕРАЦИЯ ТРУБЫ (исправлено: гарантированный проход) --------
+        // -------- ГЕНЕРАЦИЯ ТРУБЫ (гарантированный проход) --------
         function addPipe() {
-            // ограничиваем верхнюю трубу: минимум 60, максимум H - PIPE_GAP - 70
-            let minTop = 70;
+            let minTop = 65;
             let maxTop = H - PIPE_GAP - 70;
-            if(maxTop < minTop) maxTop = minTop + 20;
+            if (maxTop <= minTop) maxTop = minTop + 45;
             let topHeight = Math.floor(Math.random() * (maxTop - minTop + 1) + minTop);
             pipes.push({
                 x: W,
@@ -206,16 +212,15 @@
         // -------- ПОЛНЫЙ СБРОС --------
         function resetGame() {
             gameRunning = true;
+            collisionCooldown = false;
             score = 0;
             updateScoreUI();
             birdY = H/2 - BIRD_SIZE/2;
             birdVel = 0;
             pipes = [];
             gameSpeed = BASE_SPEED;
-            // создаём первые трубы, чтобы не было пустоты
             addPipe();
             addPipe();
-            // корректировка позиций, чтобы первая труба не сразу в птицу
             if(pipes[0]) pipes[0].x = W;
             if(pipes[1]) pipes[1].x = W + PIPE_SPACING;
         }
@@ -226,25 +231,27 @@
             birdVel = JUMP_POWER;
         }
         
-        // -------- ЛОГИКА ОБНОВЛЕНИЯ (столкновения + счёт) --------
+        // -------- ОПТИМИЗИРОВАННАЯ ЛОГИКА (без тормозов) --------
         function updateGame() {
             if(!gameRunning) return;
             
-            // 1. ПТИЦА
+            // Физика птицы
             birdVel += GRAVITY;
             birdY += birdVel;
-            if(birdY <= 0 || birdY + BIRD_SIZE >= H) {
+            
+            // Границы (смерть)
+            if(birdY <= 2 || birdY + BIRD_SIZE >= H - 2) {
                 gameRunning = false;
                 saveBest();
                 return;
             }
             
-            // 2. ТРУБЫ (движение и столкновения)
+            // Движение труб + столкновения
             for(let i=0; i<pipes.length; i++) {
                 const p = pipes[i];
                 p.x -= gameSpeed;
                 
-                // СТОЛКНОВЕНИЕ (только если игра активна)
+                // Столкновение с трубой
                 if(birdX + BIRD_SIZE > p.x && birdX < p.x + PIPE_WIDTH) {
                     if(birdY < p.topHeight || birdY + BIRD_SIZE > p.bottomY) {
                         gameRunning = false;
@@ -253,125 +260,126 @@
                     }
                 }
                 
-                // ПОДСЧЁТ ОЧКОВ (когда птица миновала трубу)
+                // Подсчёт очков
                 if(!p.counted && birdX > p.x + PIPE_WIDTH) {
                     p.counted = true;
                     score += 1;
                     updateScoreUI();
                     saveBest();
-                    // ПЛАВНОЕ УВЕЛИЧЕНИЕ СКОРОСТИ (макс 5.5)
-                    if(gameSpeed < 5.5) {
-                        gameSpeed = BASE_SPEED + Math.floor(score / 20) * 0.18;
-                        if(gameSpeed > 5.5) gameSpeed = 5.5;
+                    // Плавное увеличение скорости (макс 5.2)
+                    if(gameSpeed < 5.2) {
+                        gameSpeed = BASE_SPEED + Math.floor(score / 24) * 0.16;
+                        if(gameSpeed > 5.2) gameSpeed = 5.2;
                     }
                 }
             }
             
-            // удалить трубы, ушедшие за экран
+            // Удаляем трубы за экраном
             pipes = pipes.filter(p => p.x + PIPE_WIDTH > 0);
             
-            // 3. ГЕНЕРАЦИЯ НОВЫХ ТРУБ (чёткий интервал)
+            // Спавн новых труб (через интервал)
             if(pipes.length === 0 || pipes[pipes.length-1].x < W - PIPE_SPACING) {
                 addPipe();
             }
         }
         
-        // -------- СОВРЕМЕННАЯ ОТРИСОВКА (Liquid Glass + неон) --------
+        // ---------- ОТРИСОВКА (Liquid Glass, все надписи в стеклянном стиле) ----------
         function draw() {
             ctx.clearRect(0, 0, W, H);
             
-            // ---- ЖИДКОСТЕКЛЯННЫЙ ФОН (градиент + свечение) ----
-            const grad = ctx.createLinearGradient(0, 0, W*0.8, H);
-            grad.addColorStop(0, '#0e153a');
-            grad.addColorStop(0.5, '#1d2b64');
-            grad.addColorStop(1, '#1b2a4e');
+            // Глубокий градиентный фон
+            const grad = ctx.createLinearGradient(0, 0, W*0.6, H);
+            grad.addColorStop(0, '#0a112a');
+            grad.addColorStop(1, '#18244e');
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, W, H);
             
-            // стиль "стеклянные трубы" с неон-обводкой
+            // --- СТЕКЛЯННЫЕ ТРУБЫ с матовым эффектом ---
             for(let p of pipes) {
-                // верхняя труба (полупрозрачная с эффектом стекла)
-                ctx.fillStyle = 'rgba(80, 180, 100, 0.65)';
+                // Верхняя труба (полупрозрачное стекло)
+                ctx.fillStyle = 'rgba(90, 170, 110, 0.55)';
                 ctx.fillRect(p.x, 0, PIPE_WIDTH, p.topHeight);
-                ctx.fillStyle = 'rgba(200, 255, 150, 0.5)';
-                ctx.fillRect(p.x+4, p.topHeight-38, PIPE_WIDTH-8, 38);
-                ctx.strokeStyle = '#bbffaa';
-                ctx.lineWidth = 1.5;
-                ctx.strokeRect(p.x+2, p.topHeight-36, PIPE_WIDTH-4, 32);
+                ctx.fillStyle = 'rgba(170, 240, 140, 0.45)';
+                ctx.fillRect(p.x+5, p.topHeight-34, PIPE_WIDTH-10, 34);
+                ctx.strokeStyle = '#d0ffb0';
+                ctx.lineWidth = 1.2;
+                ctx.strokeRect(p.x+3, p.topHeight-32, PIPE_WIDTH-6, 28);
                 
-                // нижняя труба
-                ctx.fillStyle = 'rgba(80, 180, 100, 0.65)';
+                // Нижняя труба
+                ctx.fillStyle = 'rgba(90, 170, 110, 0.55)';
                 ctx.fillRect(p.x, p.bottomY, PIPE_WIDTH, H - p.bottomY);
-                ctx.fillStyle = 'rgba(200, 255, 150, 0.5)';
-                ctx.fillRect(p.x+4, p.bottomY, PIPE_WIDTH-8, 38);
-                ctx.strokeStyle = '#bbffaa';
-                ctx.strokeRect(p.x+2, p.bottomY+4, PIPE_WIDTH-4, 32);
+                ctx.fillStyle = 'rgba(170, 240, 140, 0.45)';
+                ctx.fillRect(p.x+5, p.bottomY, PIPE_WIDTH-10, 34);
+                ctx.strokeRect(p.x+3, p.bottomY+4, PIPE_WIDTH-6, 28);
             }
             
-            // ПТИЦА — сияющий кристалл
-            ctx.shadowBlur = 12;
-            ctx.shadowColor = '#ffd966';
-            ctx.fillStyle = '#ffcd6b';
+            // --- СТЕКЛЯННАЯ ПТИЦА с каплями света ---
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = '#ffcd7e';
+            ctx.fillStyle = '#ffdb8a';
             ctx.beginPath();
-            ctx.ellipse(birdX + BIRD_SIZE/2, birdY + BIRD_SIZE/2, BIRD_SIZE/1.8, BIRD_SIZE/1.6, 0, 0, Math.PI*2);
+            ctx.ellipse(birdX + BIRD_SIZE/2, birdY + BIRD_SIZE/2, BIRD_SIZE/1.75, BIRD_SIZE/1.55, 0, 0, Math.PI*2);
             ctx.fill();
-            ctx.fillStyle = '#ffaa33';
+            ctx.fillStyle = '#ffb84d';
             ctx.beginPath();
-            ctx.ellipse(birdX + BIRD_SIZE-6, birdY + 9, 6, 5, 0, 0, Math.PI*2);
+            ctx.ellipse(birdX + BIRD_SIZE-6, birdY + 9, 5, 4.5, 0, 0, Math.PI*2);
             ctx.fill();
             ctx.fillStyle = '#000000';
-            ctx.fillRect(birdX + BIRD_SIZE-4, birdY + 8, 3, 5);
+            ctx.fillRect(birdX + BIRD_SIZE-5, birdY + 8, 3, 4.5);
             ctx.fillStyle = 'white';
-            ctx.fillRect(birdX + BIRD_SIZE-3, birdY + 7, 1, 2);
-            ctx.fillStyle = '#ff7744';
+            ctx.fillRect(birdX + BIRD_SIZE-4, birdY + 7, 1.5, 2);
+            ctx.fillStyle = '#ff7340';
             ctx.beginPath();
-            ctx.moveTo(birdX + 5, birdY + 14);
-            ctx.lineTo(birdX - 8, birdY + 12);
-            ctx.lineTo(birdX + 3, birdY + 19);
+            ctx.moveTo(birdX + 4, birdY + 14);
+            ctx.lineTo(birdX - 9, birdY + 11);
+            ctx.lineTo(birdX + 2, birdY + 20);
             ctx.fill();
             ctx.shadowBlur = 0;
             
-            // ЭФФЕКТ СТЕКЛЯННЫХ БЛИКОВ
+            // --- СТЕКЛЯННЫЕ БЛИКИ (лёгкое сияние) ---
             ctx.globalCompositeOperation = 'lighter';
-            ctx.fillStyle = 'rgba(255,255,210,0.1)';
-            for(let i=0;i<3;i++) {
-                ctx.fillRect(40+i*100, 30, 60, 8);
+            for(let i=0;i<4;i++) {
+                ctx.fillStyle = 'rgba(255,240,180,0.12)';
+                ctx.fillRect(30+i*90, 45, 55, 6);
             }
             ctx.globalCompositeOperation = 'source-over';
             
-            // СЧЁТ крупно (неон)
-            ctx.font = "bold 44px 'Segoe UI', 'Courier New'";
+            // НАДПИСЬ СЧЁТА в стиле жидкого стекла (неон + размытие)
+            ctx.shadowBlur = 0;
+            ctx.font = "500 46px 'Inter', 'Segoe UI', system-ui";
+            ctx.fillStyle = '#faf3cf';
             ctx.shadowBlur = 6;
-            ctx.shadowColor = "#00ffff";
-            ctx.fillStyle = "#f2f0b0";
-            ctx.fillText(Math.floor(score), W/2-22, 80);
+            ctx.shadowColor = '#5f9eff';
+            ctx.fillText(Math.floor(score), W/2-20, 78);
             
-            // GAME OVER стиль
+            // СТЕКЛЯННАЯ ТЕНЬ для текста GAME OVER
             if(!gameRunning) {
-                ctx.font = "bold 28px 'Segoe UI'";
-                ctx.fillStyle = "#ff869e";
-                ctx.shadowColor = "#ff0000";
-                ctx.fillText("✦ GAME OVER ✦", W/2-105, H/2-45);
+                ctx.font = "600 28px 'Inter', 'Segoe UI'";
+                ctx.fillStyle = '#ffb7c7';
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#ff4070';
+                ctx.fillText("✦ GAME OVER ✦", W/2-108, H/2-45);
                 ctx.font = "14px monospace";
-                ctx.fillStyle = "#faf0b0";
-                ctx.fillText("нажми «ЗАНОВО»", W/2-58, H/2+20);
+                ctx.fillStyle = '#eef5ff';
+                ctx.fillText("нажми «ЗАНОВО»", W/2-64, H/2+20);
             }
             ctx.shadowBlur = 0;
             
-            // скорость (прозрачный текст)
-            ctx.font = "12px monospace";
-            ctx.fillStyle = "#b3ffe0";
-            ctx.fillText("⚡ speed: "+gameSpeed.toFixed(1), W-72, 27);
+            // Стеклянная скорость
+            ctx.font = "bold 12px 'Segoe UI'";
+            ctx.fillStyle = '#bbf0e0';
+            ctx.fillText("💧 speed: "+gameSpeed.toFixed(1), W-75, 28);
         }
         
-        // -------- ЦИКЛ --------
-        function gameLoop() {
+        // ---------- ОПТИМИЗИРОВАННЫЙ ЦИКЛ (60 FPS, без дерганий) ----------
+        let lastTimestamp = 0;
+        function gameLoop(now) {
+            requestAnimationFrame(gameLoop);
             updateGame();
             draw();
-            requestAnimationFrame(gameLoop);
         }
         
-        // -------- УПРАВЛЕНИЕ --------
+        // ---------- УПРАВЛЕНИЕ ----------
         canvas.addEventListener('click', (e) => {
             e.preventDefault();
             flap();
@@ -389,9 +397,9 @@
             if(e.code === 'Space') e.preventDefault();
         });
         
-        // -------- СТАРТ --------
+        // ---------- СТАРТ ----------
         resetGame();
-        gameLoop();
+        requestAnimationFrame(gameLoop);
     })();
 </script>
 </body>
