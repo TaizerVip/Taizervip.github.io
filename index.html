@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>🧮 Математический тренажёр — Питомец и магазин</title>
+    <title>🧮 Математический тренажёр — Питомец и звуки</title>
     <style>
         * {
             user-select: none;
@@ -25,6 +25,23 @@
         body.theme-space { background: linear-gradient(135deg, #0a0a2a, #2a0a4a); }
         body.theme-desert { background: linear-gradient(135deg, #d4a04a, #f0c060); }
         body.theme-city { background: linear-gradient(135deg, #2a2a3a, #3a3a5a); }
+
+        /* Качество графики */
+        body.quality-low .glass-card { backdrop-filter: none; background: rgba(0,0,0,0.6); }
+        body.quality-low .btn { transition: none; }
+        body.quality-low .shop-item { transition: none; }
+        body.quality-low .pet-emoji { filter: none; }
+        
+        body.quality-medium .glass-card { backdrop-filter: blur(8px); }
+        body.quality-medium .pet-emoji { filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3)); }
+        
+        body.quality-high .glass-card { backdrop-filter: blur(12px); }
+        body.quality-high .pet-emoji { filter: drop-shadow(0 8px 20px rgba(0,0,0,0.4)); animation: float 2s ease-in-out infinite; }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
 
         .container {
             max-width: 500px;
@@ -51,8 +68,28 @@
         }
         .pet-emoji {
             font-size: 80px;
-            filter: drop-shadow(0 8px 20px rgba(0,0,0,0.3));
+            transition: transform 0.2s ease;
+            display: inline-block;
         }
+        .pet-animation-happy { animation: shake 0.5s ease-in-out; }
+        .pet-animation-sad { animation: wobble 0.5s ease-in-out; }
+        .pet-animation-eat { animation: bounce 0.5s ease-in-out; }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+        @keyframes wobble {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-10deg); }
+            75% { transform: rotate(10deg); }
+        }
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+        
         .pet-name {
             font-size: 1.3rem;
             font-weight: bold;
@@ -96,6 +133,7 @@
         .btn-secondary { background: #45475a; color: white; box-shadow: 0 4px 0 #2a2c3a; }
         .btn-shop { background: #9b59b6; color: white; box-shadow: 0 4px 0 #6c3483; }
         .btn-danger { background: #e74c3c; color: white; box-shadow: 0 4px 0 #a93226; }
+        .btn-settings { background: #3498db; color: white; box-shadow: 0 4px 0 #1f618d; }
 
         /* Магазин */
         .shop-grid {
@@ -157,10 +195,65 @@
             color: #f9e2af;
         }
 
+        /* Настройки */
+        .settings-option {
+            margin: 15px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .settings-label {
+            color: white;
+            font-size: 1rem;
+        }
+        .toggle-switch {
+            width: 50px;
+            height: 26px;
+            background: #45475a;
+            border-radius: 30px;
+            cursor: pointer;
+            position: relative;
+            transition: 0.2s;
+        }
+        .toggle-switch.active {
+            background: #2ecc71;
+        }
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 3px;
+            transition: 0.2s;
+        }
+        .toggle-switch.active::after {
+            left: 25px;
+        }
+        .quality-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .quality-btn {
+            flex: 1;
+            padding: 8px;
+            border-radius: 30px;
+            background: #45475a;
+            color: white;
+            text-align: center;
+            cursor: pointer;
+        }
+        .quality-btn.active {
+            background: #ff9f43;
+            color: #1e1a0c;
+        }
+
         .hidden { display: none; }
     </style>
 </head>
-<body class="theme-forest">
+<body class="theme-forest quality-high">
 <div class="container" id="app">
     <!-- МЕНЮ -->
     <div id="menuScreen">
@@ -178,6 +271,7 @@
             <button class="btn btn-primary" id="playBtn">🚀 НАЧАТЬ</button>
             <button class="btn btn-shop" id="shopBtn">🛒 МАГАЗИН</button>
             <button class="btn btn-secondary" id="profileBtn">👤 ПРОФИЛЬ</button>
+            <button class="btn btn-settings" id="settingsBtn">⚙ НАСТРОЙКИ</button>
         </div>
     </div>
 
@@ -241,6 +335,35 @@
         </div>
     </div>
 
+    <!-- НАСТРОЙКИ -->
+    <div id="settingsScreen" class="hidden">
+        <div class="glass-card">
+            <button class="btn btn-secondary" id="settingsBackBtn">◀ НАЗАД</button>
+            <h2 style="color:white; text-align:center; margin:15px 0">⚙ НАСТРОЙКИ</h2>
+            
+            <div class="settings-option">
+                <span class="settings-label">🎵 Музыка</span>
+                <div class="toggle-switch" id="musicToggle"></div>
+            </div>
+            
+            <div class="settings-option">
+                <span class="settings-label">🔊 Звуки эффектов</span>
+                <div class="toggle-switch" id="sfxToggle"></div>
+            </div>
+            
+            <div class="settings-option">
+                <span class="settings-label">🖼️ Качество графики</span>
+            </div>
+            <div class="quality-buttons">
+                <div class="quality-btn" data-quality="low">🟢 Низкое</div>
+                <div class="quality-btn" data-quality="medium">🟡 Среднее</div>
+                <div class="quality-btn" data-quality="high">🔴 Высокое</div>
+            </div>
+            
+            <button class="btn btn-danger" id="resetBalanceBtn" style="margin-top:20px">💰 ОБНУЛИТЬ БАЛЛЫ</button>
+        </div>
+    </div>
+
     <!-- Диалог смены имени -->
     <div id="renameDialog" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); display:none; justify-content:center; align-items:center; z-index:1000">
         <div class="glass-card" style="width:300px">
@@ -253,6 +376,88 @@
 </div>
 
 <script>
+    // ==================== ЗВУКИ (Web Audio) ====================
+    let musicEnabled = true;
+    let sfxEnabled = true;
+    let currentMusic = null;
+    
+    function playCorrectSound() {
+        if (!sfxEnabled) return;
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.frequency.value = 880;
+            gainNode.gain.value = 0.2;
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
+            oscillator.stop(audioCtx.currentTime + 0.5);
+        } catch(e) { console.log("Sound error"); }
+    }
+    
+    function playWrongSound() {
+        if (!sfxEnabled) return;
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.frequency.value = 440;
+            gainNode.gain.value = 0.15;
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3);
+            oscillator.stop(audioCtx.currentTime + 0.3);
+        } catch(e) { console.log("Sound error"); }
+    }
+    
+    function playLevelUpSound() {
+        if (!sfxEnabled) return;
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            for (let i = 0; i < 3; i++) {
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.frequency.value = 660 + i * 110;
+                gainNode.gain.value = 0.1;
+                oscillator.start(audioCtx.currentTime + i * 0.1);
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + i * 0.1 + 0.3);
+                oscillator.stop(audioCtx.currentTime + i * 0.1 + 0.3);
+            }
+        } catch(e) {}
+    }
+    
+    function startBackgroundMusic() {
+        if (!musicEnabled) return;
+        try {
+            if (currentMusic) {
+                currentMusic.pause();
+                currentMusic = null;
+            }
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.type = "sine";
+            oscillator.frequency.value = 261.63;
+            gainNode.gain.value = 0.05;
+            oscillator.start();
+            currentMusic = { stop: () => oscillator.stop() };
+        } catch(e) {}
+    }
+    
+    function stopBackgroundMusic() {
+        if (currentMusic) {
+            currentMusic.stop();
+            currentMusic = null;
+        }
+    }
+    
     // ==================== ДАННЫЕ ====================
     let gameData = {
         score: 0,
@@ -264,7 +469,7 @@
         currentSkin: "🐦 Птица",
         currentBg: "forest"
     };
-
+    
     const skins = {
         "🐦 Птица": { emoji: "🐦", price: 0, owned: true },
         "🐱 Кот": { emoji: "🐱", price: 50, owned: false },
@@ -275,7 +480,7 @@
         "🐧 Пингвин": { emoji: "🐧", price: 120, owned: false },
         "🦄 Единорог": { emoji: "🦄", price: 200, owned: false }
     };
-
+    
     const backgrounds = {
         forest: { name: "🌲 Лес", price: 0, owned: true },
         ocean: { name: "🌊 Океан", price: 30, owned: false },
@@ -283,7 +488,7 @@
         desert: { name: "🏜️ Пустыня", price: 40, owned: false },
         city: { name: "🌃 Город", price: 60, owned: false }
     };
-
+    
     // Загрузка сохранений
     function loadData() {
         const saved = localStorage.getItem("mathTrainerData");
@@ -291,7 +496,6 @@
             try {
                 const data = JSON.parse(saved);
                 gameData = { ...gameData, ...data };
-                // Загружаем владение скинами
                 if (data.ownedSkins) {
                     for (let skin in skins) {
                         if (data.ownedSkins[skin]) skins[skin].owned = true;
@@ -302,15 +506,22 @@
                         if (data.ownedBgs[bg]) backgrounds[bg].owned = true;
                     }
                 }
+                if (data.musicEnabled !== undefined) musicEnabled = data.musicEnabled;
+                if (data.sfxEnabled !== undefined) sfxEnabled = data.sfxEnabled;
+                if (data.quality) document.body.className = document.body.className.replace(/quality-\w+/, `quality-${data.quality}`);
             } catch(e) {}
         }
+        updateToggleUI();
     }
-
+    
     function saveData() {
         const toSave = {
             ...gameData,
             ownedSkins: {},
-            ownedBgs: {}
+            ownedBgs: {},
+            musicEnabled: musicEnabled,
+            sfxEnabled: sfxEnabled,
+            quality: document.body.className.match(/quality-(\w+)/)?.[1] || "high"
         };
         for (let skin in skins) {
             if (skins[skin].owned && skins[skin].price > 0) toSave.ownedSkins[skin] = true;
@@ -320,51 +531,79 @@
         }
         localStorage.setItem("mathTrainerData", JSON.stringify(toSave));
     }
-
+    
+    function updateToggleUI() {
+        const musicToggle = document.getElementById("musicToggle");
+        const sfxToggle = document.getElementById("sfxToggle");
+        if (musicToggle) musicToggle.className = `toggle-switch ${musicEnabled ? 'active' : ''}`;
+        if (sfxToggle) sfxToggle.className = `toggle-switch ${sfxEnabled ? 'active' : ''}`;
+    }
+    
+    // Анимации питомца
+    function animatePet(animation) {
+        const petEmoji = document.querySelector(".pet-emoji");
+        if (!petEmoji) return;
+        petEmoji.classList.remove("pet-animation-happy", "pet-animation-sad", "pet-animation-eat");
+        void petEmoji.offsetWidth;
+        petEmoji.classList.add(`pet-animation-${animation}`);
+        setTimeout(() => {
+            petEmoji.classList.remove(`pet-animation-${animation}`);
+        }, 500);
+    }
+    
     // Смена фона
     function applyTheme() {
         const body = document.body;
-        body.className = `theme-${gameData.currentBg}`;
+        body.className = body.className.replace(/theme-\w+/, `theme-${gameData.currentBg}`);
     }
-
+    
     // Опыт питомца
     function addPetExp(amount) {
+        const oldLevel = gameData.petLevel;
         gameData.petExp += amount;
         let needed = gameData.petLevel * 10;
         while (gameData.petExp >= needed) {
             gameData.petExp -= needed;
             gameData.petLevel++;
             needed = gameData.petLevel * 10;
+            playLevelUpSound();
             alert(`🎉 ${gameData.petName} достиг ${gameData.petLevel} уровня!`);
+        }
+        if (gameData.petLevel > oldLevel) {
+            animatePet("happy");
         }
         updatePetUI();
         saveData();
     }
-
+    
     function updatePetUI() {
         const needed = gameData.petLevel * 10;
         const percent = (gameData.petExp / needed) * 100;
         const petEmoji = skins[gameData.currentSkin]?.emoji || "🐦";
         
-        document.getElementById("petEmoji").innerText = petEmoji;
-        document.getElementById("petName").innerText = gameData.petName;
-        document.getElementById("petLevel").innerHTML = `Уровень ${gameData.petLevel} • ${gameData.petExp}/${needed} опыта`;
-        document.getElementById("petProgress").style.width = `${percent}%`;
-        document.getElementById("menuScore").innerHTML = `⭐ ${gameData.score} баллов`;
+        const petEmojis = document.querySelectorAll(".pet-emoji");
+        petEmojis.forEach(el => el.innerText = petEmoji);
         
-        if (document.getElementById("profilePetEmoji")) {
-            document.getElementById("profilePetEmoji").innerText = petEmoji;
-            document.getElementById("profilePetName").innerText = gameData.petName;
-            document.getElementById("profilePetLevel").innerHTML = `Уровень ${gameData.petLevel} • ${gameData.petExp}/${needed} опыта`;
-            document.getElementById("profilePetProgress").style.width = `${percent}%`;
-            document.getElementById("profileScore").innerText = gameData.score;
-            document.getElementById("profileCorrect").innerText = gameData.correctAnswers;
-            document.getElementById("profileAttempts").innerText = gameData.totalAttempts;
-            const accuracy = gameData.totalAttempts > 0 ? ((gameData.correctAnswers / gameData.totalAttempts) * 100).toFixed(1) : 0;
-            document.getElementById("profileAccuracy").innerText = `${accuracy}%`;
-        }
+        const petNames = document.querySelectorAll(".pet-name");
+        petNames.forEach(el => el.innerText = gameData.petName);
+        
+        const petLevels = document.querySelectorAll(".pet-level");
+        petLevels.forEach(el => el.innerHTML = `Уровень ${gameData.petLevel} • ${gameData.petExp}/${needed} опыта`);
+        
+        const petProgresses = document.querySelectorAll(".progress-fill");
+        petProgresses.forEach(el => el.style.width = `${percent}%`);
+        
+        const scoreDisplays = document.querySelectorAll(".score-display, #gameScore, #shopScore, #profileScore");
+        document.getElementById("menuScore").innerHTML = `⭐ ${gameData.score} баллов`;
+        if (document.getElementById("gameScore")) document.getElementById("gameScore").innerHTML = `⭐ ${gameData.score}`;
+        if (document.getElementById("shopScore")) document.getElementById("shopScore").innerHTML = `⭐ ${gameData.score} баллов`;
+        if (document.getElementById("profileScore")) document.getElementById("profileScore").innerText = gameData.score;
+        if (document.getElementById("profileCorrect")) document.getElementById("profileCorrect").innerText = gameData.correctAnswers;
+        if (document.getElementById("profileAttempts")) document.getElementById("profileAttempts").innerText = gameData.totalAttempts;
+        const accuracy = gameData.totalAttempts > 0 ? ((gameData.correctAnswers / gameData.totalAttempts) * 100).toFixed(1) : 0;
+        if (document.getElementById("profileAccuracy")) document.getElementById("profileAccuracy").innerText = `${accuracy}%`;
     }
-
+    
     // Игровые переменные
     let currentDifficulty = "easy";
     let currentQuestion = "";
@@ -372,7 +611,7 @@
     let canAnswer = true;
     let gameActive = false;
     let currentScreen = "menu";
-
+    
     function generateQuestion() {
         let a, b;
         if (currentDifficulty === "easy") {
@@ -389,7 +628,7 @@
             else return { text: `${b} - ${a}`, answer: b - a };
         }
     }
-
+    
     function newQuestion() {
         if (!gameActive) return;
         canAnswer = true;
@@ -403,7 +642,7 @@
         document.getElementById("answerInput").disabled = false;
         document.getElementById("answerInput").focus();
     }
-
+    
     function checkAnswer() {
         if (!gameActive || !canAnswer) return;
         const userAnswer = parseInt(document.getElementById("answerInput").value);
@@ -423,7 +662,8 @@
             gameData.totalAttempts++;
             addPetExp(1);
             saveData();
-            document.getElementById("gameScore").innerHTML = `⭐ ${gameData.score}`;
+            playCorrectSound();
+            animatePet("happy");
             document.getElementById("gamePet").innerHTML = `${skins[gameData.currentSkin]?.emoji || "🐦"} Lv.${gameData.petLevel}`;
             document.getElementById("status").innerHTML = `✅ ПРАВИЛЬНО! +${points} балл(а)`;
             document.getElementById("status").className = "status correct";
@@ -431,13 +671,15 @@
         } else {
             gameData.totalAttempts++;
             saveData();
+            playWrongSound();
+            animatePet("sad");
             document.getElementById("status").innerHTML = `❌ НЕПРАВИЛЬНО! Ответ: ${currentAnswer}`;
             document.getElementById("status").className = "status wrong";
             setTimeout(() => { if (gameActive) newQuestion(); }, 1200);
         }
         updatePetUI();
     }
-
+    
     // Навигация
     function showScreen(screen) {
         document.getElementById("menuScreen").classList.add("hidden");
@@ -445,6 +687,7 @@
         document.getElementById("gameScreen").classList.add("hidden");
         document.getElementById("shopScreen").classList.add("hidden");
         document.getElementById("profileScreen").classList.add("hidden");
+        document.getElementById("settingsScreen").classList.add("hidden");
         
         if (screen === "menu") document.getElementById("menuScreen").classList.remove("hidden");
         if (screen === "difficulty") document.getElementById("difficultyScreen").classList.remove("hidden");
@@ -461,12 +704,15 @@
             document.getElementById("profileScreen").classList.remove("hidden");
             updatePetUI();
         }
+        if (screen === "settings") {
+            document.getElementById("settingsScreen").classList.remove("hidden");
+            updateSettingsUI();
+        }
         currentScreen = screen;
     }
-
+    
     function renderShop() {
         document.getElementById("shopScore").innerHTML = `⭐ ${gameData.score} баллов`;
-        // Скины
         const skinsGrid = document.getElementById("skinsGrid");
         skinsGrid.innerHTML = "";
         for (let [name, skin] of Object.entries(skins)) {
@@ -485,7 +731,6 @@
             }
             skinsGrid.appendChild(item);
         }
-        // Фоны
         const bgGrid = document.getElementById("bgGrid");
         bgGrid.innerHTML = "";
         for (let [id, bg] of Object.entries(backgrounds)) {
@@ -505,7 +750,7 @@
             bgGrid.appendChild(item);
         }
     }
-
+    
     function buySkin(name) {
         const skin = skins[name];
         if (gameData.score >= skin.price) {
@@ -514,11 +759,13 @@
             saveData();
             renderShop();
             updatePetUI();
+            playCorrectSound();
         } else {
             alert(`Не хватает! Нужно ${skin.price} баллов`);
+            playWrongSound();
         }
     }
-
+    
     function equipSkin(name) {
         gameData.currentSkin = name;
         saveData();
@@ -527,8 +774,9 @@
         if (gameActive) {
             document.getElementById("gamePet").innerHTML = `${skins[name].emoji} Lv.${gameData.petLevel}`;
         }
+        animatePet("happy");
     }
-
+    
     function buyBg(id) {
         const bg = backgrounds[id];
         if (gameData.score >= bg.price) {
@@ -537,11 +785,13 @@
             saveData();
             renderShop();
             updatePetUI();
+            playCorrectSound();
         } else {
             alert(`Не хватает! Нужно ${bg.price} баллов`);
+            playWrongSound();
         }
     }
-
+    
     function equipBg(id) {
         gameData.currentBg = id;
         applyTheme();
@@ -549,31 +799,58 @@
         renderShop();
         updatePetUI();
     }
-
+    
+    function updateSettingsUI() {
+        updateToggleUI();
+        const currentQuality = document.body.className.match(/quality-(\w+)/)?.[1] || "high";
+        document.querySelectorAll(".quality-btn").forEach(btn => {
+            if (btn.dataset.quality === currentQuality) btn.classList.add("active");
+            else btn.classList.remove("active");
+        });
+    }
+    
+    function setQuality(quality) {
+        let bodyClass = document.body.className;
+        bodyClass = bodyClass.replace(/quality-\w+/, `quality-${quality}`);
+        document.body.className = bodyClass;
+        saveData();
+        updateSettingsUI();
+    }
+    
+    function resetBalance() {
+        if (confirm("ОБНУЛИТЬ ВСЕ БАЛЛЫ? Питомец и достижения останутся, но баллы станут 0!")) {
+            gameData.score = 0;
+            saveData();
+            updatePetUI();
+            alert("Баллы обнулены!");
+        }
+    }
+    
     function startGame(difficulty) {
         currentDifficulty = difficulty;
         gameActive = true;
         showScreen("game");
     }
-
+    
     // Обработчики
     loadData();
     applyTheme();
     updatePetUI();
-
+    
     document.getElementById("playBtn").onclick = () => showScreen("difficulty");
     document.getElementById("shopBtn").onclick = () => showScreen("shop");
     document.getElementById("profileBtn").onclick = () => showScreen("profile");
+    document.getElementById("settingsBtn").onclick = () => showScreen("settings");
     document.getElementById("backToMenuBtn").onclick = () => showScreen("menu");
     document.getElementById("gameMenuBtn").onclick = () => { gameActive = false; showScreen("menu"); };
     document.getElementById("shopBackBtn").onclick = () => showScreen("menu");
     document.getElementById("profileBackBtn").onclick = () => showScreen("menu");
+    document.getElementById("settingsBackBtn").onclick = () => showScreen("menu");
     document.getElementById("easyBtn").onclick = () => startGame("easy");
     document.getElementById("mediumBtn").onclick = () => startGame("medium");
     document.getElementById("checkBtn").onclick = checkAnswer;
     document.getElementById("answerInput").addEventListener("keypress", (e) => { if (e.key === "Enter") checkAnswer(); });
     
-    // Вкладки магазина
     document.getElementById("skinsTabBtn").onclick = () => {
         document.getElementById("skinsGrid").classList.remove("hidden");
         document.getElementById("bgGrid").classList.add("hidden");
@@ -583,7 +860,25 @@
         document.getElementById("bgGrid").classList.remove("hidden");
     };
     
-    // Смена имени
+    document.getElementById("musicToggle").onclick = () => {
+        musicEnabled = !musicEnabled;
+        updateToggleUI();
+        saveData();
+        if (musicEnabled) startBackgroundMusic();
+        else stopBackgroundMusic();
+    };
+    document.getElementById("sfxToggle").onclick = () => {
+        sfxEnabled = !sfxEnabled;
+        updateToggleUI();
+        saveData();
+    };
+    
+    document.querySelectorAll(".quality-btn").forEach(btn => {
+        btn.onclick = () => setQuality(btn.dataset.quality);
+    });
+    
+    document.getElementById("resetBalanceBtn").onclick = resetBalance;
+    
     document.getElementById("renamePetBtn").onclick = () => {
         document.getElementById("newPetName").value = gameData.petName;
         document.getElementById("renameDialog").style.display = "flex";
@@ -601,7 +896,6 @@
         document.getElementById("renameDialog").style.display = "none";
     };
     
-    // Сброс статистики
     document.getElementById("resetStatsBtn").onclick = () => {
         if (confirm("Сбросить всю статистику? Баллы и питомец обнулятся!")) {
             gameData = {
@@ -614,7 +908,6 @@
                 currentSkin: "🐦 Птица",
                 currentBg: "forest"
             };
-            // Сброс владения скинами (кроме стартового)
             for (let skin in skins) {
                 skins[skin].owned = (skin === "🐦 Птица");
             }
