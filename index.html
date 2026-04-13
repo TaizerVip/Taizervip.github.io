@@ -1,846 +1,632 @@
-import tkinter as tk
-from tkinter import ttk, messagebox
-import json
-import os
-from pathlib import Path
-import random
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🧮 Математический тренажёр — Питомец и магазин</title>
+    <style>
+        * {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-class MathTrainer:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("🧮 Математический тренажёр")
-        self.root.geometry("600x700")
-        self.root.resizable(False, False)
-        self.root.configure(bg="#1e1e2e")
-        
-        # Загрузка данных
-        self.user_data = self.load_data()
-        
-        # Переменные игры
-        self.current_screen = "menu"
-        self.difficulty = None
-        self.current_question = None
-        self.current_answer = None
-        self.can_answer = True
-        self.after_id = None
-        
-        # Скины и фон
-        self.current_skin = self.user_data.get("current_skin", "🐦 Птица")
-        self.current_bg = self.user_data.get("current_bg", "forest")
-        self.skins = {
-            "🐦 Птица": {"emoji": "🐦", "price": 0, "owned": True},
-            "🐱 Кот": {"emoji": "🐱", "price": 50, "owned": self.user_data.get("skin_cat", False)},
-            "🐶 Собака": {"emoji": "🐶", "price": 50, "owned": self.user_data.get("skin_dog", False)},
-            "🦊 Лиса": {"emoji": "🦊", "price": 100, "owned": self.user_data.get("skin_fox", False)},
-            "🐼 Панда": {"emoji": "🐼", "price": 150, "owned": self.user_data.get("skin_panda", False)},
-            "🐸 Лягушка": {"emoji": "🐸", "price": 80, "owned": self.user_data.get("skin_frog", False)},
-            "🐧 Пингвин": {"emoji": "🐧", "price": 120, "owned": self.user_data.get("skin_penguin", False)},
-            "🦄 Единорог": {"emoji": "🦄", "price": 200, "owned": self.user_data.get("skin_unicorn", False)},
+        body {
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'Poppins', 'Inter', system-ui, sans-serif;
+            transition: background 0.3s ease;
         }
-        
-        self.bg_themes = {
-            "forest": {"name": "🌲 Лес", "color1": "#1a472a", "color2": "#2d6a4f", "price": 0, "owned": True},
-            "ocean": {"name": "🌊 Океан", "color1": "#0a2a4a", "color2": "#1a5a7a", "price": 30, "owned": self.user_data.get("bg_ocean", False)},
-            "space": {"name": "🚀 Космос", "color1": "#0a0a2a", "color2": "#2a0a4a", "price": 50, "owned": self.user_data.get("bg_space", False)},
-            "desert": {"name": "🏜️ Пустыня", "color1": "#d4a04a", "color2": "#f0c060", "price": 40, "owned": self.user_data.get("bg_desert", False)},
-            "city": {"name": "🌃 Город", "color1": "#2a2a3a", "color2": "#3a3a5a", "price": 60, "owned": self.user_data.get("bg_city", False)},
+
+        /* Темы */
+        body.theme-forest { background: linear-gradient(135deg, #1a472a, #2d6a4f); }
+        body.theme-ocean { background: linear-gradient(135deg, #0a2a4a, #1a5a7a); }
+        body.theme-space { background: linear-gradient(135deg, #0a0a2a, #2a0a4a); }
+        body.theme-desert { background: linear-gradient(135deg, #d4a04a, #f0c060); }
+        body.theme-city { background: linear-gradient(135deg, #2a2a3a, #3a3a5a); }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
-        
-        # Питомец
-        self.pet_level = self.user_data.get("pet_level", 1)
-        self.pet_exp = self.user_data.get("pet_exp", 0)
-        self.pet_exp_needed = self.pet_level * 10
-        self.pet_name = self.user_data.get("pet_name", "Пушистик")
-        
-        # Цвета
-        self.update_colors()
-        
-        # Интерфейс
-        self.main_frame = tk.Frame(self.root, bg=self.bg_color)
-        self.main_frame.pack(fill="both", expand=True)
-        
-        self.show_menu()
-    
-    def update_colors(self):
-        themes = {
-            "forest": ("#1a472a", "#2d6a4f", "#d4e6b0", "#90EE90"),
-            "ocean": ("#0a2a4a", "#1a5a7a", "#a0d4f0", "#4aa0d4"),
-            "space": ("#0a0a2a", "#2a0a4a", "#d0a0f0", "#a060d4"),
-            "desert": ("#d4a04a", "#f0c060", "#2a2a1a", "#c08030"),
-            "city": ("#2a2a3a", "#3a3a5a", "#d0d0f0", "#8080d4"),
+
+        /* Стеклянные карточки */
+        .glass-card {
+            background: rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(12px);
+            border-radius: 48px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        bg = themes.get(self.current_bg, themes["forest"])
-        self.bg_color = bg[0]
-        self.frame_color = bg[1]
-        self.fg_color = bg[2]
-        self.accent_color = bg[3]
-    
-    def load_data(self):
-        data_path = Path.home() / "Documents" / "math_trainer_data.json"
-        if data_path.exists():
-            try:
-                with open(data_path, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            except:
-                pass
-        return {"score": 0, "correct_answers": 0, "total_attempts": 0,
-                "pet_level": 1, "pet_exp": 0, "pet_name": "Пушистик",
-                "current_skin": "🐦 Птица", "current_bg": "forest"}
-    
-    def save_data(self):
-        # Сохраняем все данные, включая скины
-        self.user_data["current_skin"] = self.current_skin
-        self.user_data["current_bg"] = self.current_bg
-        self.user_data["pet_level"] = self.pet_level
-        self.user_data["pet_exp"] = self.pet_exp
-        self.user_data["pet_name"] = self.pet_name
+
+        /* Питомец */
+        .pet-area {
+            text-align: center;
+        }
+        .pet-emoji {
+            font-size: 80px;
+            filter: drop-shadow(0 8px 20px rgba(0,0,0,0.3));
+        }
+        .pet-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: white;
+            margin: 5px 0;
+        }
+        .pet-level {
+            font-size: 0.9rem;
+            color: #ffd966;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2ecc71, #27ae60);
+            border-radius: 20px;
+            transition: width 0.3s ease;
+        }
+
+        /* Кнопки */
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: transform 0.05s linear;
+            margin-bottom: 12px;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: #ff9f43; color: #1e1a0c; box-shadow: 0 4px 0 #b86f1a; }
+        .btn-secondary { background: #45475a; color: white; box-shadow: 0 4px 0 #2a2c3a; }
+        .btn-shop { background: #9b59b6; color: white; box-shadow: 0 4px 0 #6c3483; }
+        .btn-danger { background: #e74c3c; color: white; box-shadow: 0 4px 0 #a93226; }
+
+        /* Магазин */
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 15px;
+        }
+        .shop-item {
+            background: rgba(0,0,0,0.4);
+            border-radius: 24px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.1s;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .shop-item:active { transform: scale(0.96); }
+        .shop-item-emoji { font-size: 48px; }
+        .shop-item-name { font-size: 0.8rem; color: white; margin: 5px 0; }
+        .shop-item-price { font-size: 0.7rem; color: #f9e2af; }
+        .shop-item-owned { color: #2ecc71; font-size: 0.7rem; }
+        .shop-item-equipped { color: #ff9f43; font-size: 0.7rem; }
+
+        /* Игровая область */
+        .question {
+            font-size: 48px;
+            font-weight: bold;
+            text-align: center;
+            color: white;
+            margin: 30px 0;
+        }
+        .answer-input {
+            width: 100%;
+            padding: 16px;
+            font-size: 28px;
+            text-align: center;
+            background: rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 60px;
+            color: white;
+            font-weight: bold;
+        }
+        .answer-input:focus { outline: none; border-color: #ff9f43; }
+        .status { text-align: center; margin-top: 15px; font-size: 1rem; }
+        .correct { color: #2ecc71; }
+        .wrong { color: #e74c3c; }
+
+        /* Статистика */
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .score-display {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #f9e2af;
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="theme-forest">
+<div class="container" id="app">
+    <!-- МЕНЮ -->
+    <div id="menuScreen">
+        <div class="glass-card pet-area">
+            <div class="pet-emoji" id="petEmoji">🐦</div>
+            <div class="pet-name" id="petName">Пушистик</div>
+            <div class="pet-level" id="petLevel">Уровень 1</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="petProgress" style="width: 0%"></div>
+            </div>
+            <div class="score-display" id="menuScore">⭐ 0 баллов</div>
+        </div>
+
+        <div class="glass-card">
+            <button class="btn btn-primary" id="playBtn">🚀 НАЧАТЬ</button>
+            <button class="btn btn-shop" id="shopBtn">🛒 МАГАЗИН</button>
+            <button class="btn btn-secondary" id="profileBtn">👤 ПРОФИЛЬ</button>
+        </div>
+    </div>
+
+    <!-- ВЫБОР СЛОЖНОСТИ -->
+    <div id="difficultyScreen" class="hidden">
+        <div class="glass-card">
+            <button class="btn btn-secondary" id="backToMenuBtn">◀ НАЗАД</button>
+            <h2 style="color:white; text-align:center; margin:20px 0">Выбери уровень</h2>
+            <button class="btn btn-primary" id="easyBtn">🟢 ЛЁГКИЙ (1 балл)</button>
+            <button class="btn btn-primary" id="mediumBtn">🟠 СРЕДНИЙ (2 балла)</button>
+        </div>
+    </div>
+
+    <!-- ИГРА -->
+    <div id="gameScreen" class="hidden">
+        <div class="glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <button class="btn btn-secondary" style="width: auto; padding: 8px 16px; margin:0" id="gameMenuBtn">◀ МЕНЮ</button>
+                <div id="gamePet" style="color:white; font-size:1.2rem">🐦 Lv.1</div>
+                <div class="score-display" id="gameScore">⭐ 0</div>
+            </div>
+            <div class="question" id="question">0 + 0</div>
+            <input type="number" id="answerInput" class="answer-input" placeholder="?" autofocus>
+            <button class="btn btn-primary" id="checkBtn" style="margin-top: 15px;">✅ ПРОВЕРИТЬ</button>
+            <div class="status" id="status"></div>
+        </div>
+    </div>
+
+    <!-- МАГАЗИН -->
+    <div id="shopScreen" class="hidden">
+        <div class="glass-card">
+            <button class="btn btn-secondary" id="shopBackBtn">◀ НАЗАД</button>
+            <div class="score-display" style="text-align:center; margin:10px 0" id="shopScore">⭐ 0 баллов</div>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button class="btn btn-primary" style="flex:1; padding:10px" id="skinsTabBtn">🎭 ПЕРСОНАЖИ</button>
+                <button class="btn btn-primary" style="flex:1; padding:10px" id="bgTabBtn">🌍 ФОНЫ</button>
+            </div>
+            <div id="skinsGrid" class="shop-grid"></div>
+            <div id="bgGrid" class="shop-grid hidden"></div>
+        </div>
+    </div>
+
+    <!-- ПРОФИЛЬ -->
+    <div id="profileScreen" class="hidden">
+        <div class="glass-card">
+            <button class="btn btn-secondary" id="profileBackBtn">◀ НАЗАД</button>
+            <div class="pet-area">
+                <div class="pet-emoji" id="profilePetEmoji">🐦</div>
+                <div class="pet-name" id="profilePetName">Пушистик</div>
+                <div class="pet-level" id="profilePetLevel">Уровень 1</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="profilePetProgress" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="stats-row"><span>⭐ Всего баллов:</span><span id="profileScore">0</span></div>
+            <div class="stats-row"><span>✅ Правильных ответов:</span><span id="profileCorrect">0</span></div>
+            <div class="stats-row"><span>📊 Всего попыток:</span><span id="profileAttempts">0</span></div>
+            <div class="stats-row"><span>📈 Процент успеха:</span><span id="profileAccuracy">0%</span></div>
+            <button class="btn btn-secondary" id="renamePetBtn" style="margin-top:15px">🏷️ СМЕНИТЬ ИМЯ</button>
+            <button class="btn btn-danger" id="resetStatsBtn">🔄 СБРОСИТЬ СТАТИСТИКУ</button>
+        </div>
+    </div>
+
+    <!-- Диалог смены имени -->
+    <div id="renameDialog" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); display:none; justify-content:center; align-items:center; z-index:1000">
+        <div class="glass-card" style="width:300px">
+            <h3 style="color:white; text-align:center">Имя питомца</h3>
+            <input type="text" id="newPetName" style="width:100%; padding:12px; margin:15px 0; border-radius:30px; border:none; background:#313244; color:white; text-align:center">
+            <button class="btn btn-primary" id="saveNameBtn">СОХРАНИТЬ</button>
+            <button class="btn btn-secondary" id="cancelNameBtn">ОТМЕНА</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==================== ДАННЫЕ ====================
+    let gameData = {
+        score: 0,
+        correctAnswers: 0,
+        totalAttempts: 0,
+        petLevel: 1,
+        petExp: 0,
+        petName: "Пушистик",
+        currentSkin: "🐦 Птица",
+        currentBg: "forest"
+    };
+
+    const skins = {
+        "🐦 Птица": { emoji: "🐦", price: 0, owned: true },
+        "🐱 Кот": { emoji: "🐱", price: 50, owned: false },
+        "🐶 Собака": { emoji: "🐶", price: 50, owned: false },
+        "🦊 Лиса": { emoji: "🦊", price: 100, owned: false },
+        "🐼 Панда": { emoji: "🐼", price: 150, owned: false },
+        "🐸 Лягушка": { emoji: "🐸", price: 80, owned: false },
+        "🐧 Пингвин": { emoji: "🐧", price: 120, owned: false },
+        "🦄 Единорог": { emoji: "🦄", price: 200, owned: false }
+    };
+
+    const backgrounds = {
+        forest: { name: "🌲 Лес", price: 0, owned: true },
+        ocean: { name: "🌊 Океан", price: 30, owned: false },
+        space: { name: "🚀 Космос", price: 50, owned: false },
+        desert: { name: "🏜️ Пустыня", price: 40, owned: false },
+        city: { name: "🌃 Город", price: 60, owned: false }
+    };
+
+    // Загрузка сохранений
+    function loadData() {
+        const saved = localStorage.getItem("mathTrainerData");
+        if (saved) {
+            try {
+                const data = JSON.parse(saved);
+                gameData = { ...gameData, ...data };
+                // Загружаем владение скинами
+                if (data.ownedSkins) {
+                    for (let skin in skins) {
+                        if (data.ownedSkins[skin]) skins[skin].owned = true;
+                    }
+                }
+                if (data.ownedBgs) {
+                    for (let bg in backgrounds) {
+                        if (data.ownedBgs[bg]) backgrounds[bg].owned = true;
+                    }
+                }
+            } catch(e) {}
+        }
+    }
+
+    function saveData() {
+        const toSave = {
+            ...gameData,
+            ownedSkins: {},
+            ownedBgs: {}
+        };
+        for (let skin in skins) {
+            if (skins[skin].owned && skins[skin].price > 0) toSave.ownedSkins[skin] = true;
+        }
+        for (let bg in backgrounds) {
+            if (backgrounds[bg].owned && backgrounds[bg].price > 0) toSave.ownedBgs[bg] = true;
+        }
+        localStorage.setItem("mathTrainerData", JSON.stringify(toSave));
+    }
+
+    // Смена фона
+    function applyTheme() {
+        const body = document.body;
+        body.className = `theme-${gameData.currentBg}`;
+    }
+
+    // Опыт питомца
+    function addPetExp(amount) {
+        gameData.petExp += amount;
+        let needed = gameData.petLevel * 10;
+        while (gameData.petExp >= needed) {
+            gameData.petExp -= needed;
+            gameData.petLevel++;
+            needed = gameData.petLevel * 10;
+            alert(`🎉 ${gameData.petName} достиг ${gameData.petLevel} уровня!`);
+        }
+        updatePetUI();
+        saveData();
+    }
+
+    function updatePetUI() {
+        const needed = gameData.petLevel * 10;
+        const percent = (gameData.petExp / needed) * 100;
+        const petEmoji = skins[gameData.currentSkin]?.emoji || "🐦";
         
-        # Сохраняем владение скинами
-        for skin_id, skin in self.skins.items():
-            if skin["owned"] and skin["price"] > 0:
-                key = f"skin_{skin_id.split()[1].lower()}"
-                self.user_data[key] = True
+        document.getElementById("petEmoji").innerText = petEmoji;
+        document.getElementById("petName").innerText = gameData.petName;
+        document.getElementById("petLevel").innerHTML = `Уровень ${gameData.petLevel} • ${gameData.petExp}/${needed} опыта`;
+        document.getElementById("petProgress").style.width = `${percent}%`;
+        document.getElementById("menuScore").innerHTML = `⭐ ${gameData.score} баллов`;
         
-        for bg_id, bg in self.bg_themes.items():
-            if bg["owned"] and bg["price"] > 0:
-                self.user_data[f"bg_{bg_id}"] = True
+        if (document.getElementById("profilePetEmoji")) {
+            document.getElementById("profilePetEmoji").innerText = petEmoji;
+            document.getElementById("profilePetName").innerText = gameData.petName;
+            document.getElementById("profilePetLevel").innerHTML = `Уровень ${gameData.petLevel} • ${gameData.petExp}/${needed} опыта`;
+            document.getElementById("profilePetProgress").style.width = `${percent}%`;
+            document.getElementById("profileScore").innerText = gameData.score;
+            document.getElementById("profileCorrect").innerText = gameData.correctAnswers;
+            document.getElementById("profileAttempts").innerText = gameData.totalAttempts;
+            const accuracy = gameData.totalAttempts > 0 ? ((gameData.correctAnswers / gameData.totalAttempts) * 100).toFixed(1) : 0;
+            document.getElementById("profileAccuracy").innerText = `${accuracy}%`;
+        }
+    }
+
+    // Игровые переменные
+    let currentDifficulty = "easy";
+    let currentQuestion = "";
+    let currentAnswer = 0;
+    let canAnswer = true;
+    let gameActive = false;
+    let currentScreen = "menu";
+
+    function generateQuestion() {
+        let a, b;
+        if (currentDifficulty === "easy") {
+            a = Math.floor(Math.random() * 90) + 10;
+            b = Math.floor(Math.random() * 90) + 10;
+        } else {
+            a = Math.floor(Math.random() * 900) + 100;
+            b = Math.floor(Math.random() * 900) + 100;
+        }
+        if (Math.random() < 0.5) {
+            return { text: `${a} + ${b}`, answer: a + b };
+        } else {
+            if (a >= b) return { text: `${a} - ${b}`, answer: a - b };
+            else return { text: `${b} - ${a}`, answer: b - a };
+        }
+    }
+
+    function newQuestion() {
+        if (!gameActive) return;
+        canAnswer = true;
+        const q = generateQuestion();
+        currentQuestion = q.text;
+        currentAnswer = q.answer;
+        document.getElementById("question").innerText = currentQuestion;
+        document.getElementById("answerInput").value = "";
+        document.getElementById("status").innerHTML = "";
+        document.getElementById("checkBtn").disabled = false;
+        document.getElementById("answerInput").disabled = false;
+        document.getElementById("answerInput").focus();
+    }
+
+    function checkAnswer() {
+        if (!gameActive || !canAnswer) return;
+        const userAnswer = parseInt(document.getElementById("answerInput").value);
+        if (isNaN(userAnswer)) {
+            document.getElementById("status").innerHTML = "❌ Введи число!";
+            document.getElementById("status").className = "status wrong";
+            return;
+        }
+        const points = currentDifficulty === "easy" ? 1 : 2;
+        canAnswer = false;
+        document.getElementById("checkBtn").disabled = true;
+        document.getElementById("answerInput").disabled = true;
         
-        data_path = Path.home() / "Documents" / "math_trainer_data.json"
-        try:
-            with open(data_path, "w", encoding="utf-8") as f:
-                json.dump(self.user_data, f, ensure_ascii=False, indent=2)
-        except:
-            pass
-    
-    def clear_screen(self):
-        if self.after_id:
-            self.root.after_cancel(self.after_id)
-            self.after_id = None
-        for widget in self.main_frame.winfo_children():
-            widget.destroy()
-    
-    def show_menu(self):
-        self.clear_screen()
-        self.current_screen = "menu"
-        self.update_colors()
-        self.root.configure(bg=self.bg_color)
-        self.main_frame.configure(bg=self.bg_color)
+        if (userAnswer === currentAnswer) {
+            gameData.score += points;
+            gameData.correctAnswers++;
+            gameData.totalAttempts++;
+            addPetExp(1);
+            saveData();
+            document.getElementById("gameScore").innerHTML = `⭐ ${gameData.score}`;
+            document.getElementById("gamePet").innerHTML = `${skins[gameData.currentSkin]?.emoji || "🐦"} Lv.${gameData.petLevel}`;
+            document.getElementById("status").innerHTML = `✅ ПРАВИЛЬНО! +${points} балл(а)`;
+            document.getElementById("status").className = "status correct";
+            setTimeout(() => { if (gameActive) newQuestion(); }, 800);
+        } else {
+            gameData.totalAttempts++;
+            saveData();
+            document.getElementById("status").innerHTML = `❌ НЕПРАВИЛЬНО! Ответ: ${currentAnswer}`;
+            document.getElementById("status").className = "status wrong";
+            setTimeout(() => { if (gameActive) newQuestion(); }, 1200);
+        }
+        updatePetUI();
+    }
+
+    // Навигация
+    function showScreen(screen) {
+        document.getElementById("menuScreen").classList.add("hidden");
+        document.getElementById("difficultyScreen").classList.add("hidden");
+        document.getElementById("gameScreen").classList.add("hidden");
+        document.getElementById("shopScreen").classList.add("hidden");
+        document.getElementById("profileScreen").classList.add("hidden");
         
-        # Питомец в меню
-        pet_frame = tk.Frame(self.main_frame, bg=self.bg_color)
-        pet_frame.pack(pady=20)
-        
-        # Анимация питомца
-        pet_emoji = self.skins.get(self.current_skin, {"emoji": "🐦"})["emoji"]
-        pet_label = tk.Label(
-            pet_frame,
-            text=pet_emoji,
-            font=("Segoe UI", 60),
-            bg=self.bg_color
-        )
-        pet_label.pack()
-        
-        tk.Label(
-            pet_frame,
-            text=f"{self.pet_name}",
-            font=("Segoe UI", 14, "bold"),
-            bg=self.bg_color,
-            fg=self.fg_color
-        ).pack()
-        
-        # Прогресс-бар питомца
-        progress_frame = tk.Frame(pet_frame, bg=self.bg_color)
-        progress_frame.pack(pady=5)
-        
-        tk.Label(
-            progress_frame,
-            text=f"Ур. {self.pet_level}",
-            font=("Segoe UI", 10),
-            bg=self.bg_color,
-            fg=self.fg_color
-        ).pack(side="left", padx=5)
-        
-        self.pet_progress = ttk.Progressbar(
-            progress_frame,
-            length=200,
-            mode='determinate'
-        )
-        self.pet_progress.pack(side="left", padx=5)
-        self.pet_progress['value'] = (self.pet_exp / self.pet_exp_needed) * 100
-        
-        tk.Label(
-            progress_frame,
-            text=f"{self.pet_exp}/{self.pet_exp_needed}",
-            font=("Segoe UI", 10),
-            bg=self.bg_color,
-            fg=self.fg_color
-        ).pack(side="left", padx=5)
-        
-        # Заголовок
-        title = tk.Label(
-            self.main_frame,
-            text="🧮 МАТЕМАТИЧЕСКИЙ\nТРЕНАЖЁР",
-            font=("Segoe UI", 24, "bold"),
-            bg=self.bg_color,
-            fg=self.accent_color,
-            justify="center"
-        )
-        title.pack(pady=20)
-        
-        # Кнопки
-        start_btn = tk.Button(
-            self.main_frame,
-            text="🚀 НАЧАТЬ",
-            font=("Segoe UI", 14, "bold"),
-            bg=self.accent_color,
-            fg="#1e1e2e",
-            relief="flat",
-            padx=30,
-            pady=10,
-            cursor="hand2",
-            command=self.show_difficulty_selection
-        )
-        start_btn.pack(pady=10)
-        
-        shop_btn = tk.Button(
-            self.main_frame,
-            text="🛒 МАГАЗИН",
-            font=("Segoe UI", 14, "bold"),
-            bg="#45475a",
-            fg=self.fg_color,
-            relief="flat",
-            padx=30,
-            pady=10,
-            cursor="hand2",
-            command=self.show_shop
-        )
-        shop_btn.pack(pady=5)
-        
-        profile_btn = tk.Button(
-            self.main_frame,
-            text="👤 ПРОФИЛЬ",
-            font=("Segoe UI", 14, "bold"),
-            bg="#45475a",
-            fg=self.fg_color,
-            relief="flat",
-            padx=30,
-            pady=10,
-            cursor="hand2",
-            command=self.show_profile
-        )
-        profile_btn.pack(pady=5)
-        
-        # Статистика
-        stats_frame = tk.Frame(self.main_frame, bg=self.bg_color)
-        stats_frame.pack(side="bottom", pady=20)
-        
-        tk.Label(
-            stats_frame,
-            text=f"⭐ Баллов: {self.user_data['score']}",
-            font=("Segoe UI", 12),
-            bg=self.bg_color,
-            fg="#f9e2af"
-        ).pack()
-    
-    def show_shop(self):
-        self.clear_screen()
-        self.current_screen = "shop"
-        
-        # Кнопка назад
-        back_btn = tk.Button(
-            self.main_frame,
-            text="◀ НАЗАД",
-            font=("Segoe UI", 12),
-            bg="#45475a",
-            fg=self.fg_color,
-            relief="flat",
-            padx=15,
-            pady=5,
-            cursor="hand2",
-            command=self.show_menu
-        )
-        back_btn.pack(anchor="nw", padx=20, pady=10)
-        
-        tk.Label(
-            self.main_frame,
-            text="🛒 МАГАЗИН",
-            font=("Segoe UI", 20, "bold"),
-            bg=self.bg_color,
-            fg=self.accent_color
-        ).pack(pady=10)
-        
-        tk.Label(
-            self.main_frame,
-            text=f"💰 Твои баллы: {self.user_data['score']}",
-            font=("Segoe UI", 14),
-            bg=self.bg_color,
-            fg="#f9e2af"
-        ).pack(pady=5)
-        
-        # Вкладки
-        notebook = ttk.Notebook(self.main_frame)
-        notebook.pack(fill="both", expand=True, padx=20, pady=10)
-        
-        # Вкладка скинов
-        skins_frame = tk.Frame(notebook, bg=self.bg_color)
-        notebook.add(skins_frame, text="🎭 ПЕРСОНАЖИ")
-        self.create_shop_grid(skins_frame, self.skins, "skin")
-        
-        # Вкладка фонов
-        bg_frame = tk.Frame(notebook, bg=self.bg_color)
-        notebook.add(bg_frame, text="🌍 ФОНЫ")
-        self.create_shop_grid(bg_frame, self.bg_themes, "bg")
-    
-    def create_shop_grid(self, parent, items, item_type):
-        canvas = tk.Canvas(parent, bg=self.bg_color, highlightthickness=0)
-        scrollbar = tk.Scrollbar(parent, orient="vertical", command=canvas.yview)
-        scrollable_frame = tk.Frame(canvas, bg=self.bg_color)
-        
-        scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-        )
-        
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
-        
-        row, col = 0, 0
-        for name, item in items.items():
-            frame = tk.Frame(
-                scrollable_frame,
-                bg=self.frame_color,
-                relief="solid",
-                bd=1,
-                padx=10,
-                pady=10
-            )
-            frame.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
-            
-            # Эмодзи или иконка
-            if item_type == "skin":
-                icon = tk.Label(frame, text=item["emoji"], font=("Segoe UI", 40), bg=self.frame_color)
-            else:
-                icon = tk.Label(frame, text=item["name"].split()[0], font=("Segoe UI", 40), bg=self.frame_color)
-            icon.pack()
-            
-            tk.Label(frame, text=name, font=("Segoe UI", 10, "bold"), bg=self.frame_color, fg=self.fg_color).pack()
-            
-            if item["owned"]:
-                status = "✅ Владелец"
-                status_color = "#2ecc71"
-                btn_state = "disabled"
-            else:
-                status = f"💰 {item['price']} баллов"
-                status_color = "#f9e2af"
-                btn_state = "normal"
-            
-            tk.Label(frame, text=status, font=("Segoe UI", 9), bg=self.frame_color, fg=status_color).pack()
-            
-            if not item["owned"]:
-                buy_btn = tk.Button(
-                    frame,
-                    text="КУПИТЬ",
-                    font=("Segoe UI", 9, "bold"),
-                    bg=self.accent_color,
-                    relief="flat",
-                    padx=10,
-                    pady=2,
-                    cursor="hand2",
-                    command=lambda n=name, t=item_type: self.buy_item(n, t)
-                )
-                buy_btn.pack(pady=5)
-            elif item_type == "skin" and name == self.current_skin:
-                tk.Label(frame, text="🔵 НАДЕТО", font=("Segoe UI", 8), bg=self.frame_color, fg="#2ecc71").pack()
-            elif item_type == "bg" and name == self.current_bg:
-                tk.Label(frame, text="🔵 АКТИВЕН", font=("Segoe UI", 8), bg=self.frame_color, fg="#2ecc71").pack()
-            elif item["owned"]:
-                equip_btn = tk.Button(
-                    frame,
-                    text="НАДЕТЬ" if item_type == "skin" else "АКТИВИРОВАТЬ",
-                    font=("Segoe UI", 9, "bold"),
-                    bg="#555",
-                    fg="white",
-                    relief="flat",
-                    padx=10,
-                    pady=2,
-                    cursor="hand2",
-                    command=lambda n=name, t=item_type: self.equip_item(n, t)
-                )
-                equip_btn.pack(pady=5)
-            
-            col += 1
-            if col > 2:
-                col = 0
-                row += 1
-        
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-    
-    def buy_item(self, name, item_type):
-        items = self.skins if item_type == "skin" else self.bg_themes
-        item = items[name]
-        price = item["price"]
-        
-        if self.user_data["score"] >= price:
-            self.user_data["score"] -= price
-            item["owned"] = True
-            self.save_data()
-            messagebox.showinfo("Покупка", f"Ты купил {name}!")
-            self.show_shop()
-        else:
-            messagebox.showwarning("Не хватает", f"Нужно {price} баллов! У тебя {self.user_data['score']}")
-    
-    def equip_item(self, name, item_type):
-        if item_type == "skin":
-            self.current_skin = name
-            messagebox.showinfo("Готово", f"Теперь ты играешь за {name}!")
-        else:
-            self.current_bg = name
-            self.update_colors()
-            self.root.configure(bg=self.bg_color)
-            messagebox.showinfo("Готово", f"Фон изменён на {self.bg_themes[name]['name']}!")
-        
-        self.save_data()
-        self.show_menu()
-    
-    def show_profile(self):
-        self.clear_screen()
-        self.current_screen = "profile"
-        
-        back_btn = tk.Button(
-            self.main_frame,
-            text="◀ НАЗАД",
-            font=("Segoe UI", 12),
-            bg="#45475a",
-            fg=self.fg_color,
-            relief="flat",
-            padx=15,
-            pady=5,
-            cursor="hand2",
-            command=self.show_menu
-        )
-        back_btn.pack(anchor="nw", padx=20, pady=10)
-        
-        # Питомец в профиле
-        pet_frame = tk.Frame(self.main_frame, bg=self.bg_color)
-        pet_frame.pack(pady=20)
-        
-        pet_emoji = self.skins.get(self.current_skin, {"emoji": "🐦"})["emoji"]
-        pet_label = tk.Label(
-            pet_frame,
-            text=pet_emoji,
-            font=("Segoe UI", 80),
-            bg=self.bg_color
-        )
-        pet_label.pack()
-        
-        tk.Label(
-            pet_frame,
-            text=f"{self.pet_name} (Уровень {self.pet_level})",
-            font=("Segoe UI", 16, "bold"),
-            bg=self.bg_color,
-            fg=self.accent_color
-        ).pack()
-        
-        # Прогресс
-        self.pet_progress_profile = ttk.Progressbar(
-            pet_frame,
-            length=300,
-            mode='determinate'
-        )
-        self.pet_progress_profile.pack(pady=5)
-        self.pet_progress_profile['value'] = (self.pet_exp / self.pet_exp_needed) * 100
-        
-        tk.Label(
-            pet_frame,
-            text=f"Опыт: {self.pet_exp}/{self.pet_exp_needed}",
-            font=("Segoe UI", 10),
-            bg=self.bg_color,
-            fg=self.fg_color
-        ).pack()
-        
-        # Статистика игрока
-        stats_frame = tk.Frame(self.main_frame, bg=self.bg_color)
-        stats_frame.pack(pady=20)
-        
-        stats = [
-            ("⭐ Всего баллов:", str(self.user_data["score"]), "#f9e2af"),
-            ("✅ Правильных ответов:", str(self.user_data["correct_answers"]), "#a6e3a1"),
-            ("📊 Всего попыток:", str(self.user_data["total_attempts"]), "#89b4fa"),
-        ]
-        
-        if self.user_data["total_attempts"] > 0:
-            accuracy = (self.user_data["correct_answers"] / self.user_data["total_attempts"]) * 100
-            stats.append(("📈 Процент успеха:", f"{accuracy:.1f}%", "#fab387"))
-        
-        for label_text, value, color in stats:
-            row = tk.Frame(stats_frame, bg=self.bg_color)
-            row.pack(pady=5)
-            tk.Label(row, text=label_text, font=("Segoe UI", 12), bg=self.bg_color, fg=self.fg_color).pack(side="left", padx=10)
-            tk.Label(row, text=value, font=("Segoe UI", 14, "bold"), bg=self.bg_color, fg=color).pack(side="left", padx=10)
-        
-        # Кнопка смены имени
-        name_btn = tk.Button(
-            self.main_frame,
-            text="🏷️ СМЕНИТЬ ИМЯ ПИТОМЦА",
-            font=("Segoe UI", 12),
-            bg="#45475a",
-            fg=self.fg_color,
-            relief="flat",
-            padx=20,
-            pady=5,
-            cursor="hand2",
-            command=self.change_pet_name
-        )
-        name_btn.pack(pady=10)
-        
-        # Сброс статистики
-        reset_btn = tk.Button(
-            self.main_frame,
-            text="🔄 СБРОСИТЬ СТАТИСТИКУ",
-            font=("Segoe UI", 12),
-            bg="#f38ba8",
-            fg="#1e1e2e",
-            relief="flat",
-            padx=20,
-            pady=5,
-            cursor="hand2",
-            command=self.reset_profile
-        )
-        reset_btn.pack()
-    
-    def change_pet_name(self):
-        dialog = tk.Toplevel(self.root)
-        dialog.title("Имя питомца")
-        dialog.geometry("300x150")
-        dialog.configure(bg=self.bg_color)
-        dialog.transient(self.root)
-        dialog.grab_set()
-        
-        tk.Label(dialog, text="Введите новое имя:", font=("Segoe UI", 12), bg=self.bg_color, fg=self.fg_color).pack(pady=10)
-        entry = tk.Entry(dialog, font=("Segoe UI", 12), bg="#313244", fg=self.fg_color, insertbackground=self.fg_color)
-        entry.pack(pady=5)
-        entry.insert(0, self.pet_name)
-        
-        def save():
-            new_name = entry.get().strip()
-            if new_name:
-                self.pet_name = new_name
-                self.user_data["pet_name"] = new_name
-                self.save_data()
-                dialog.destroy()
-                self.show_profile()
-        
-        tk.Button(dialog, text="СОХРАНИТЬ", font=("Segoe UI", 10, "bold"), bg=self.accent_color, relief="flat", padx=20, pady=5, command=save).pack(pady=10)
-    
-    def reset_profile(self):
-        if messagebox.askyesno("Сброс", "Сбросить всю статистику? Баллы и питомец обнулятся!"):
-            self.user_data = {
-                "score": 0,
-                "correct_answers": 0,
-                "total_attempts": 0,
-                "pet_level": 1,
-                "pet_exp": 0,
-                "pet_name": "Пушистик",
-                "current_skin": "🐦 Птица",
-                "current_bg": "forest"
+        if (screen === "menu") document.getElementById("menuScreen").classList.remove("hidden");
+        if (screen === "difficulty") document.getElementById("difficultyScreen").classList.remove("hidden");
+        if (screen === "game") {
+            document.getElementById("gameScreen").classList.remove("hidden");
+            gameActive = true;
+            newQuestion();
+        }
+        if (screen === "shop") {
+            document.getElementById("shopScreen").classList.remove("hidden");
+            renderShop();
+        }
+        if (screen === "profile") {
+            document.getElementById("profileScreen").classList.remove("hidden");
+            updatePetUI();
+        }
+        currentScreen = screen;
+    }
+
+    function renderShop() {
+        document.getElementById("shopScore").innerHTML = `⭐ ${gameData.score} баллов`;
+        // Скины
+        const skinsGrid = document.getElementById("skinsGrid");
+        skinsGrid.innerHTML = "";
+        for (let [name, skin] of Object.entries(skins)) {
+            const item = document.createElement("div");
+            item.className = "shop-item";
+            item.innerHTML = `
+                <div class="shop-item-emoji">${skin.emoji}</div>
+                <div class="shop-item-name">${name}</div>
+                <div class="shop-item-price">💰 ${skin.price}</div>
+                ${skin.owned ? (gameData.currentSkin === name ? '<div class="shop-item-equipped">✅ НАДЕТО</div>' : '<div class="shop-item-owned">✅ Владелец</div>') : ''}
+            `;
+            if (!skin.owned) {
+                item.onclick = () => buySkin(name);
+            } else if (gameData.currentSkin !== name) {
+                item.onclick = () => equipSkin(name);
             }
-            self.pet_level = 1
-            self.pet_exp = 0
-            self.pet_exp_needed = 10
-            self.pet_name = "Пушистик"
-            self.current_skin = "🐦 Птица"
-            self.current_bg = "forest"
-            self.update_colors()
-            self.save_data()
-            self.show_menu()
-            messagebox.showinfo("Сброс", "Статистика обнулена!")
-    
-    def add_pet_exp(self, amount):
-        """Добавляет опыт питомцу за правильный ответ"""
-        self.pet_exp += amount
-        self.pet_exp_needed = self.pet_level * 10
-        
-        # Проверка на повышение уровня
-        while self.pet_exp >= self.pet_exp_needed:
-            self.pet_exp -= self.pet_exp_needed
-            self.pet_level += 1
-            self.pet_exp_needed = self.pet_level * 10
-            messagebox.showinfo("🎉 УРОВЕНЬ ПОВЫШЕН!", f"{self.pet_name} достиг {self.pet_level} уровня!")
-        
-        self.user_data["pet_level"] = self.pet_level
-        self.user_data["pet_exp"] = self.pet_exp
-        self.save_data()
-    
-    def show_difficulty_selection(self):
-        self.clear_screen()
-        
-        back_btn = tk.Button(
-            self.main_frame,
-            text="◀ НАЗАД",
-            font=("Segoe UI", 12),
-            bg="#45475a",
-            fg=self.fg_color,
-            relief="flat",
-            padx=15,
-            pady=5,
-            cursor="hand2",
-            command=self.show_menu
-        )
-        back_btn.pack(anchor="nw", padx=20, pady=10)
-        
-        title = tk.Label(
-            self.main_frame,
-            text="Выбери уровень сложности",
-            font=("Segoe UI", 20, "bold"),
-            bg=self.bg_color,
-            fg=self.fg_color
-        )
-        title.pack(pady=60)
-        
-        easy_btn = tk.Button(
-            self.main_frame,
-            text="🟢 ЛЁГКИЙ\n(двузначные числа • 1 балл)",
-            font=("Segoe UI", 14, "bold"),
-            bg="#313244",
-            fg="#a6e3a1",
-            relief="flat",
-            padx=40,
-            pady=20,
-            cursor="hand2",
-            command=lambda: self.start_game("easy")
-        )
-        easy_btn.pack(pady=10)
-        
-        medium_btn = tk.Button(
-            self.main_frame,
-            text="🟠 СРЕДНИЙ\n(трёхзначные числа • 2 балла)",
-            font=("Segoe UI", 14, "bold"),
-            bg="#313244",
-            fg="#fab387",
-            relief="flat",
-            padx=40,
-            pady=20,
-            cursor="hand2",
-            command=lambda: self.start_game("medium")
-        )
-        medium_btn.pack(pady=10)
-    
-    def start_game(self, difficulty):
-        self.difficulty = difficulty
-        self.current_screen = "game"
-        self.can_answer = True
-        self.setup_game_ui()
-        self.new_question()
-    
-    def setup_game_ui(self):
-        self.clear_screen()
-        self.update_colors()
-        
-        top_frame = tk.Frame(self.main_frame, bg=self.bg_color)
-        top_frame.pack(fill="x", padx=20, pady=10)
-        
-        back_btn = tk.Button(
-            top_frame,
-            text="◀ МЕНЮ",
-            font=("Segoe UI", 11),
-            bg="#45475a",
-            fg=self.fg_color,
-            relief="flat",
-            padx=12,
-            pady=5,
-            cursor="hand2",
-            command=self.back_to_menu
-        )
-        back_btn.pack(side="left")
-        
-        difficulty_text = "🟢 ЛЁГКИЙ" if self.difficulty == "easy" else "🟠 СРЕДНИЙ"
-        diff_label = tk.Label(
-            top_frame,
-            text=difficulty_text,
-            font=("Segoe UI", 11, "bold"),
-            bg=self.bg_color,
-            fg="#a6e3a1" if self.difficulty == "easy" else "#fab387"
-        )
-        diff_label.pack(side="left", padx=20)
-        
-        # Питомец в игре
-        pet_emoji = self.skins.get(self.current_skin, {"emoji": "🐦"})["emoji"]
-        self.game_pet_label = tk.Label(
-            top_frame,
-            text=f"{pet_emoji} Lv.{self.pet_level}",
-            font=("Segoe UI", 12),
-            bg=self.bg_color,
-            fg=self.accent_color
-        )
-        self.game_pet_label.pack(side="left", padx=20)
-        
-        self.score_label = tk.Label(
-            top_frame,
-            text=f"⭐ {self.user_data['score']}",
-            font=("Segoe UI", 14, "bold"),
-            bg=self.bg_color,
-            fg="#f9e2af"
-        )
-        self.score_label.pack(side="right")
-        
-        self.game_frame = tk.Frame(self.main_frame, bg=self.bg_color)
-        self.game_frame.pack(expand=True, fill="both", padx=30, pady=30)
-        
-        self.question_label = tk.Label(
-            self.game_frame,
-            text="",
-            font=("Segoe UI", 48, "bold"),
-            bg=self.bg_color,
-            fg=self.accent_color
-        )
-        self.question_label.pack(pady=50)
-        
-        entry_frame = tk.Frame(self.game_frame, bg=self.bg_color)
-        entry_frame.pack(pady=20)
-        
-        tk.Label(
-            entry_frame,
-            text="= ",
-            font=("Segoe UI", 32),
-            bg=self.bg_color,
-            fg=self.fg_color
-        ).pack(side="left")
-        
-        self.answer_entry = tk.Entry(
-            entry_frame,
-            font=("Segoe UI", 32, "bold"),
-            width=8,
-            justify="center",
-            bg="#313244",
-            fg=self.fg_color,
-            insertbackground=self.fg_color,
-            relief="flat",
-            bd=0
-        )
-        self.answer_entry.pack(side="left", padx=10)
-        self.answer_entry.bind("<Return>", self.check_answer)
-        
-        self.check_button = tk.Button(
-            self.game_frame,
-            text="✅ ПРОВЕРИТЬ",
-            font=("Segoe UI", 14, "bold"),
-            bg=self.accent_color,
-            fg="#1e1e2e",
-            relief="flat",
-            padx=20,
-            pady=10,
-            command=self.check_answer,
-            cursor="hand2"
-        )
-        self.check_button.pack(pady=20)
-        
-        self.status_label = tk.Label(
-            self.game_frame,
-            text="",
-            font=("Segoe UI", 14),
-            bg=self.bg_color
-        )
-        self.status_label.pack(pady=10)
-        
-        self.answer_entry.focus()
-    
-    def generate_question(self):
-        if self.difficulty == "easy":
-            a = random.randint(10, 99)
-            b = random.randint(10, 99)
-            if random.choice([True, False]):
-                return f"{a} + {b}", a + b
-            else:
-                if a >= b:
-                    return f"{a} - {b}", a - b
-                else:
-                    return f"{b} - {a}", b - a
-        else:
-            a = random.randint(100, 999)
-            b = random.randint(100, 999)
-            if random.choice([True, False]):
-                return f"{a} + {b}", a + b
-            else:
-                if a >= b:
-                    return f"{a} - {b}", a - b
-                else:
-                    return f"{b} - {a}", b - a
-    
-    def new_question(self):
-        if self.current_screen != "game":
-            return
-        
-        self.can_answer = True
-        self.current_question, self.current_answer = self.generate_question()
-        self.question_label.config(text=self.current_question, fg=self.accent_color)
-        self.answer_entry.config(state="normal")
-        self.answer_entry.delete(0, tk.END)
-        self.status_label.config(text="")
-        self.check_button.config(state="normal")
-        self.answer_entry.focus()
-    
-    def check_answer(self, event=None):
-        if self.current_screen != "game" or not self.can_answer:
-            return
-        
-        try:
-            user_answer = int(self.answer_entry.get().strip())
-        except ValueError:
-            self.status_label.config(text="❌ Введи число!", fg="#f38ba8")
-            self.answer_entry.delete(0, tk.END)
-            self.answer_entry.focus()
-            return
-        
-        points = 1 if self.difficulty == "easy" else 2
-        
-        self.can_answer = False
-        self.answer_entry.config(state="disabled")
-        self.check_button.config(state="disabled")
-        
-        if user_answer == self.current_answer:
-            self.user_data["score"] += points
-            self.user_data["correct_answers"] += 1
-            self.user_data["total_attempts"] += 1
-            
-            # Добавляем опыт питомцу (1 опыт за правильный ответ)
-            self.add_pet_exp(1)
-            
-            self.save_data()
-            self.update_score_display()
-            
-            self.question_label.config(fg="#a6e3a1")
-            self.status_label.config(text=f"✅ ПРАВИЛЬНО! +{points} балл(а)", fg="#a6e3a1")
-            
-            # Обновляем уровень питомца в игре
-            pet_emoji = self.skins.get(self.current_skin, {"emoji": "🐦"})["emoji"]
-            self.game_pet_label.config(text=f"{pet_emoji} Lv.{self.pet_level}")
-            
-            self.after_id = self.root.after(800, self.new_question)
-        else:
-            self.user_data["total_attempts"] += 1
-            self.save_data()
-            self.update_score_display()
-            
-            self.status_label.config(
-                text=f"❌ НЕПРАВИЛЬНО! Ответ: {self.current_answer}",
-                fg="#f38ba8"
-            )
-            self.after_id = self.root.after(1200, self.new_question)
-    
-    def update_score_display(self):
-        if hasattr(self, 'score_label'):
-            self.score_label.config(text=f"⭐ {self.user_data['score']}")
-    
-    def back_to_menu(self):
-        if messagebox.askyesno("Выход", "Вернуться в главное меню?"):
-            if self.after_id:
-                self.root.after_cancel(self.after_id)
-                self.after_id = None
-            self.show_menu()
+            skinsGrid.appendChild(item);
+        }
+        // Фоны
+        const bgGrid = document.getElementById("bgGrid");
+        bgGrid.innerHTML = "";
+        for (let [id, bg] of Object.entries(backgrounds)) {
+            const item = document.createElement("div");
+            item.className = "shop-item";
+            item.innerHTML = `
+                <div class="shop-item-emoji">${bg.name.split(" ")[0]}</div>
+                <div class="shop-item-name">${bg.name}</div>
+                <div class="shop-item-price">💰 ${bg.price}</div>
+                ${bg.owned ? (gameData.currentBg === id ? '<div class="shop-item-equipped">🔵 АКТИВЕН</div>' : '<div class="shop-item-owned">✅ Владелец</div>') : ''}
+            `;
+            if (!bg.owned) {
+                item.onclick = () => buyBg(id);
+            } else if (gameData.currentBg !== id) {
+                item.onclick = () => equipBg(id);
+            }
+            bgGrid.appendChild(item);
+        }
+    }
 
+    function buySkin(name) {
+        const skin = skins[name];
+        if (gameData.score >= skin.price) {
+            gameData.score -= skin.price;
+            skin.owned = true;
+            saveData();
+            renderShop();
+            updatePetUI();
+        } else {
+            alert(`Не хватает! Нужно ${skin.price} баллов`);
+        }
+    }
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = MathTrainer(root)
-    root.mainloop()
+    function equipSkin(name) {
+        gameData.currentSkin = name;
+        saveData();
+        renderShop();
+        updatePetUI();
+        if (gameActive) {
+            document.getElementById("gamePet").innerHTML = `${skins[name].emoji} Lv.${gameData.petLevel}`;
+        }
+    }
+
+    function buyBg(id) {
+        const bg = backgrounds[id];
+        if (gameData.score >= bg.price) {
+            gameData.score -= bg.price;
+            bg.owned = true;
+            saveData();
+            renderShop();
+            updatePetUI();
+        } else {
+            alert(`Не хватает! Нужно ${bg.price} баллов`);
+        }
+    }
+
+    function equipBg(id) {
+        gameData.currentBg = id;
+        applyTheme();
+        saveData();
+        renderShop();
+        updatePetUI();
+    }
+
+    function startGame(difficulty) {
+        currentDifficulty = difficulty;
+        gameActive = true;
+        showScreen("game");
+    }
+
+    // Обработчики
+    loadData();
+    applyTheme();
+    updatePetUI();
+
+    document.getElementById("playBtn").onclick = () => showScreen("difficulty");
+    document.getElementById("shopBtn").onclick = () => showScreen("shop");
+    document.getElementById("profileBtn").onclick = () => showScreen("profile");
+    document.getElementById("backToMenuBtn").onclick = () => showScreen("menu");
+    document.getElementById("gameMenuBtn").onclick = () => { gameActive = false; showScreen("menu"); };
+    document.getElementById("shopBackBtn").onclick = () => showScreen("menu");
+    document.getElementById("profileBackBtn").onclick = () => showScreen("menu");
+    document.getElementById("easyBtn").onclick = () => startGame("easy");
+    document.getElementById("mediumBtn").onclick = () => startGame("medium");
+    document.getElementById("checkBtn").onclick = checkAnswer;
+    document.getElementById("answerInput").addEventListener("keypress", (e) => { if (e.key === "Enter") checkAnswer(); });
+    
+    // Вкладки магазина
+    document.getElementById("skinsTabBtn").onclick = () => {
+        document.getElementById("skinsGrid").classList.remove("hidden");
+        document.getElementById("bgGrid").classList.add("hidden");
+    };
+    document.getElementById("bgTabBtn").onclick = () => {
+        document.getElementById("skinsGrid").classList.add("hidden");
+        document.getElementById("bgGrid").classList.remove("hidden");
+    };
+    
+    // Смена имени
+    document.getElementById("renamePetBtn").onclick = () => {
+        document.getElementById("newPetName").value = gameData.petName;
+        document.getElementById("renameDialog").style.display = "flex";
+    };
+    document.getElementById("saveNameBtn").onclick = () => {
+        const newName = document.getElementById("newPetName").value.trim();
+        if (newName) {
+            gameData.petName = newName;
+            saveData();
+            updatePetUI();
+        }
+        document.getElementById("renameDialog").style.display = "none";
+    };
+    document.getElementById("cancelNameBtn").onclick = () => {
+        document.getElementById("renameDialog").style.display = "none";
+    };
+    
+    // Сброс статистики
+    document.getElementById("resetStatsBtn").onclick = () => {
+        if (confirm("Сбросить всю статистику? Баллы и питомец обнулятся!")) {
+            gameData = {
+                score: 0,
+                correctAnswers: 0,
+                totalAttempts: 0,
+                petLevel: 1,
+                petExp: 0,
+                petName: "Пушистик",
+                currentSkin: "🐦 Птица",
+                currentBg: "forest"
+            };
+            // Сброс владения скинами (кроме стартового)
+            for (let skin in skins) {
+                skins[skin].owned = (skin === "🐦 Птица");
+            }
+            for (let bg in backgrounds) {
+                backgrounds[bg].owned = (bg === "forest");
+            }
+            saveData();
+            applyTheme();
+            updatePetUI();
+            showScreen("menu");
+        }
+    };
+</script>
+</body>
+</html>
