@@ -112,36 +112,6 @@
         .quality-btn { flex: 1; padding: 10px; border-radius: 40px; background: rgba(255,255,255,0.15); color: white; text-align: center; cursor: pointer; }
         .quality-btn.active { background: #ff9f43; color: #1c1c1e; }
 
-        /* Анимация загрузки */
-        .loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(20px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            transition: opacity 0.3s;
-        }
-        .loader-content {
-            text-align: center;
-        }
-        .loader-spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(255,255,255,0.3);
-            border-top-color: #ff9f43;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin: 0 auto 15px;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .loader-text { color: white; font-size: 1.2rem; }
-
         .mini-game { text-align: center; }
         .mini-game-btn { display: inline-block; padding: 12px 24px; margin: 8px; background: #ff9f43; border: none; border-radius: 40px; font-size: 1.2rem; cursor: pointer; }
         .mini-game-input { padding: 10px; font-size: 1.2rem; text-align: center; border-radius: 30px; border: none; margin: 10px; }
@@ -151,13 +121,6 @@
 </head>
 <body class="theme-forest">
 <div class="container" id="app">
-    <div id="loader" class="loader">
-        <div class="loader-content">
-            <div class="loader-spinner"></div>
-            <div class="loader-text">Загрузка...</div>
-        </div>
-    </div>
-
     <div id="menuScreen">
         <div class="glass-card pet-area">
             <div class="pet-emoji" id="petEmoji">🐶</div>
@@ -322,16 +285,6 @@
     let currentQuestion = null, canAnswer = true, gameActive = false;
     let musicEnabled = true, sfxEnabled = true, explainEnabled = true;
     let musicVolume = 0.3;
-    
-    function showLoader(show, text = "Загрузка...") {
-        const loader = document.getElementById("loader");
-        if (show) {
-            document.querySelector(".loader-text").innerText = text;
-            loader.classList.remove("hidden");
-        } else {
-            setTimeout(() => loader.classList.add("hidden"), 300);
-        }
-    }
     
     function addDiaryEntry(message) {
         const entry = { date: new Date().toLocaleString(), message };
@@ -529,11 +482,13 @@
         const percent = (gameData.petExp / need) * 100;
         let emoji = skins[gameData.currentSkin]?.emoji || "🐶";
         
-        // Добавляем одежду к эмодзи
-        if (gameData.clothes.hat) emoji = "👒" + emoji;
-        if (gameData.clothes.glasses) emoji = "👓" + emoji;
+        // Добавляем одежду к эмодзи (просто для отображения)
+        let clothesStr = "";
+        if (gameData.clothes.hat) clothesStr += "👒";
+        if (gameData.clothes.glasses) clothesStr += "👓";
+        if (gameData.clothes.accessory) clothesStr += "🧣";
         
-        document.querySelectorAll(".pet-emoji").forEach(el => el.innerText = emoji);
+        document.querySelectorAll(".pet-emoji").forEach(el => el.innerText = clothesStr + emoji);
         document.querySelectorAll(".pet-name").forEach(el => el.innerText = gameData.petName);
         document.querySelectorAll(".pet-level").forEach(el => el.innerHTML = `Уровень ${gameData.petLevel} • ${gameData.petExp}/${need} опыта`);
         document.querySelectorAll(".progress-fill").forEach(el => el.style.width = `${percent}%`);
@@ -547,7 +502,7 @@
             let acc = gameData.totalAttempts > 0 ? ((gameData.correctAnswers / gameData.totalAttempts) * 100).toFixed(1) : 0;
             document.getElementById("profileAccuracy").innerText = `${acc}%`;
         }
-        if (document.getElementById("gamePet")) document.getElementById("gamePet").innerHTML = `${emoji} Lv.${gameData.petLevel}`;
+        if (document.getElementById("gamePet")) document.getElementById("gamePet").innerHTML = `${clothesStr + emoji} Lv.${gameData.petLevel}`;
     }
     
     function animatePet(anim) {
@@ -674,32 +629,28 @@
     }
     
     function showScreen(screen) {
-        showLoader(true, "Загрузка...");
-        setTimeout(() => {
-            document.getElementById("menuScreen").classList.add("hidden");
-            document.getElementById("difficultyScreen").classList.add("hidden");
-            document.getElementById("gameScreen").classList.add("hidden");
-            document.getElementById("shopScreen").classList.add("hidden");
-            document.getElementById("profileScreen").classList.add("hidden");
-            document.getElementById("settingsScreen").classList.add("hidden");
-            document.getElementById("petActionsScreen").classList.add("hidden");
-            document.getElementById("dressScreen").classList.add("hidden");
-            document.getElementById("roomScreen").classList.add("hidden");
-            document.getElementById("diaryScreen").classList.add("hidden");
-            document.getElementById("miniGameScreen").classList.add("hidden");
-            if (screen === "menu") document.getElementById("menuScreen").classList.remove("hidden");
-            if (screen === "difficulty") document.getElementById("difficultyScreen").classList.remove("hidden");
-            if (screen === "game") { document.getElementById("gameScreen").classList.remove("hidden"); gameActive = true; newQuestion(); }
-            if (screen === "shop") { document.getElementById("shopScreen").classList.remove("hidden"); renderShop(); }
-            if (screen === "profile") { document.getElementById("profileScreen").classList.remove("hidden"); updatePetUI(); }
-            if (screen === "settings") document.getElementById("settingsScreen").classList.remove("hidden");
-            if (screen === "petActions") document.getElementById("petActionsScreen").classList.remove("hidden");
-            if (screen === "dress") { document.getElementById("dressScreen").classList.remove("hidden"); renderClothesShop(); }
-            if (screen === "room") { document.getElementById("roomScreen").classList.remove("hidden"); renderRoomShop(); }
-            if (screen === "diary") showDiary();
-            if (screen === "miniGame") { document.getElementById("miniGameScreen").classList.remove("hidden"); startMiniGame(); }
-            showLoader(false);
-        }, 200);
+        document.getElementById("menuScreen").classList.add("hidden");
+        document.getElementById("difficultyScreen").classList.add("hidden");
+        document.getElementById("gameScreen").classList.add("hidden");
+        document.getElementById("shopScreen").classList.add("hidden");
+        document.getElementById("profileScreen").classList.add("hidden");
+        document.getElementById("settingsScreen").classList.add("hidden");
+        document.getElementById("petActionsScreen").classList.add("hidden");
+        document.getElementById("dressScreen").classList.add("hidden");
+        document.getElementById("roomScreen").classList.add("hidden");
+        document.getElementById("diaryScreen").classList.add("hidden");
+        document.getElementById("miniGameScreen").classList.add("hidden");
+        if (screen === "menu") document.getElementById("menuScreen").classList.remove("hidden");
+        if (screen === "difficulty") document.getElementById("difficultyScreen").classList.remove("hidden");
+        if (screen === "game") { document.getElementById("gameScreen").classList.remove("hidden"); gameActive = true; newQuestion(); }
+        if (screen === "shop") { document.getElementById("shopScreen").classList.remove("hidden"); renderShop(); }
+        if (screen === "profile") { document.getElementById("profileScreen").classList.remove("hidden"); updatePetUI(); }
+        if (screen === "settings") document.getElementById("settingsScreen").classList.remove("hidden");
+        if (screen === "petActions") document.getElementById("petActionsScreen").classList.remove("hidden");
+        if (screen === "dress") { document.getElementById("dressScreen").classList.remove("hidden"); renderClothesShop(); }
+        if (screen === "room") { document.getElementById("roomScreen").classList.remove("hidden"); renderRoomShop(); }
+        if (screen === "diary") showDiary();
+        if (screen === "miniGame") { document.getElementById("miniGameScreen").classList.remove("hidden"); startMiniGame(); }
     }
     
     function startGame(diff) { currentDifficulty = diff; gameActive = true; showScreen("game"); }
