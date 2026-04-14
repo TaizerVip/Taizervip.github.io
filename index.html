@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MathTrainer — iOS стиль</title>
+    <title>MathTrainer — со звуками</title>
     <style>
         * {
             margin: 0;
@@ -19,14 +19,12 @@
             background: linear-gradient(145deg, #1a472a, #0d2818);
         }
 
-        /* ТЕМЫ (iOS-палитра) */
         body.theme-forest { background: linear-gradient(145deg, #1a472a, #0d2818); }
         body.theme-ocean { background: linear-gradient(145deg, #0a2a4a, #041a2f); }
         body.theme-space { background: linear-gradient(145deg, #0a0a2a, #050518); }
         body.theme-desert { background: linear-gradient(145deg, #d4a04a, #b87a2a); }
         body.theme-city { background: linear-gradient(145deg, #1e1e2a, #12121c); }
 
-        /* Качество графики */
         body.quality-low .glass-card { backdrop-filter: none; background: rgba(0,0,0,0.6); }
         body.quality-medium .glass-card { backdrop-filter: blur(8px); }
         body.quality-high .glass-card { backdrop-filter: blur(20px); }
@@ -42,7 +40,6 @@
             flex-direction: column;
         }
 
-        /* iOS-стекло */
         .glass-card {
             background: rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(20px);
@@ -53,9 +50,8 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
         }
 
-        /* Питомец */
         .pet-area { text-align: center; }
-        .pet-emoji { font-size: 84px; display: inline-block; transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1); }
+        .pet-emoji { font-size: 84px; display: inline-block; transition: transform 0.2s; }
         .pet-animation-happy { animation: bounce 0.4s ease; }
         .pet-animation-sad { animation: shake 0.4s ease; }
         @keyframes bounce { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
@@ -66,7 +62,6 @@
         .progress-bar { width: 100%; height: 8px; background: rgba(255,255,255,0.2); border-radius: 20px; overflow: hidden; margin: 12px 0; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, #34c759, #2ecc71); border-radius: 20px; transition: width 0.3s ease; }
 
-        /* iOS-кнопки */
         .btn {
             display: block;
             width: 100%;
@@ -89,27 +84,12 @@
         .btn-danger { background: #ff3b30; color: white; box-shadow: 0 4px 12px rgba(255,59,48,0.3); }
         .btn-settings { background: #64d2ff; color: #1c1c1e; }
 
-        /* Кнопки объяснения */
-        .explanation-buttons {
-            display: flex;
-            gap: 12px;
-            margin-top: 16px;
-        }
-        .exp-btn {
-            flex: 1;
-            padding: 12px;
-            border-radius: 40px;
-            font-weight: 590;
-            font-size: 1rem;
-            border: none;
-            cursor: pointer;
-            transition: 0.1s;
-        }
+        .explanation-buttons { display: flex; gap: 12px; margin-top: 16px; }
+        .exp-btn { flex: 1; padding: 12px; border-radius: 40px; font-weight: 590; font-size: 1rem; border: none; cursor: pointer; transition: 0.1s; }
         .exp-btn-continue { background: #34c759; color: white; }
         .exp-btn-explain { background: rgba(255,255,255,0.2); color: white; backdrop-filter: blur(10px); }
         .exp-btn:active { transform: scale(0.96); }
 
-        /* Блок объяснения — КОНТРАСТНЫЙ ТЕКСТ */
         .explanation-box {
             background: rgba(0, 0, 0, 0.75);
             backdrop-filter: blur(16px);
@@ -124,22 +104,12 @@
             line-height: 1.8;
             text-align: center;
             color: #f0f0f0;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
             background: rgba(0,0,0,0.4);
             padding: 12px;
             border-radius: 28px;
         }
-        .step-text {
-            margin-top: 16px;
-            padding-top: 12px;
-            border-top: 1px solid rgba(255,255,255,0.25);
-            font-size: 1rem;
-            line-height: 1.5;
-            color: #e5e5e5;
-            font-weight: 450;
-        }
+        .step-text { margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.25); font-size: 1rem; line-height: 1.5; color: #e5e5e5; }
 
-        /* Магазин, сетка */
         .shop-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 15px; }
         .shop-item { background: rgba(0,0,0,0.5); backdrop-filter: blur(12px); border-radius: 32px; padding: 12px; text-align: center; cursor: pointer; border: 0.5px solid rgba(255,255,255,0.2); }
         .shop-item:active { transform: scale(0.96); }
@@ -154,7 +124,7 @@
         .correct { color: #34c759; }
         .wrong { color: #ff6b6b; }
 
-        .stats-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 0.5px solid rgba(255,255,255,0.15); color: white; font-weight: 450; }
+        .stats-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 0.5px solid rgba(255,255,255,0.15); color: white; }
         .score-display { font-size: 1.2rem; font-weight: 600; color: #ffd966; }
 
         .settings-option { margin: 16px 0; display: flex; justify-content: space-between; align-items: center; }
@@ -163,6 +133,10 @@
         .toggle-switch.active { background: #34c759; }
         .toggle-switch::after { content: ''; position: absolute; width: 24px; height: 24px; background: white; border-radius: 50%; top: 2px; left: 3px; transition: 0.2s; }
         .toggle-switch.active::after { left: 25px; }
+        
+        .volume-slider { width: 150px; height: 6px; -webkit-appearance: none; background: rgba(255,255,255,0.3); border-radius: 10px; outline: none; }
+        .volume-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #ff9f43; border-radius: 50%; cursor: pointer; }
+        
         .quality-buttons { display: flex; gap: 8px; }
         .quality-btn { flex: 1; padding: 10px; border-radius: 40px; background: rgba(255,255,255,0.15); color: white; text-align: center; cursor: pointer; font-weight: 500; }
         .quality-btn.active { background: #ff9f43; color: #1c1c1e; }
@@ -172,7 +146,6 @@
 </head>
 <body class="theme-forest quality-high">
 <div class="container" id="app">
-    <!-- МЕНЮ -->
     <div id="menuScreen">
         <div class="glass-card pet-area">
             <div class="pet-emoji" id="petEmoji">🐦</div>
@@ -189,18 +162,16 @@
         </div>
     </div>
 
-    <!-- ВЫБОР УРОВНЯ -->
     <div id="difficultyScreen" class="hidden">
         <div class="glass-card">
             <button class="btn btn-secondary" id="backToMenuBtn">◀ НАЗАД</button>
-            <h2 style="color:white; text-align:center; margin:20px 0; font-weight:600;">Выбери уровень</h2>
+            <h2 style="color:white; text-align:center; margin:20px 0;">Выбери уровень</h2>
             <button class="btn btn-primary" id="easyBtn">🟢 ЛЁГКИЙ (≤50)</button>
             <button class="btn btn-primary" id="mediumBtn">🟠 СРЕДНИЙ (≤100)</button>
             <button class="btn btn-primary" id="hardBtn">🔴 ТАБЛИЦА УМНОЖЕНИЯ</button>
         </div>
     </div>
 
-    <!-- ИГРА -->
     <div id="gameScreen" class="hidden">
         <div class="glass-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -220,40 +191,117 @@
         </div>
     </div>
 
-    <!-- МАГАЗИН / ПРОФИЛЬ / НАСТРОЙКИ (iOS стиль) -->
     <div id="shopScreen" class="hidden"><div class="glass-card"><button class="btn btn-secondary" id="shopBackBtn">◀ НАЗАД</button><div class="score-display" style="text-align:center" id="shopScore">⭐ 0</div><div style="display:flex;gap:12px;margin:15px 0"><button class="btn btn-primary" style="flex:1" id="skinsTabBtn">🎭 ПЕРСОНАЖИ</button><button class="btn btn-primary" style="flex:1" id="bgTabBtn">🌍 ФОНЫ</button></div><div id="skinsGrid" class="shop-grid"></div><div id="bgGrid" class="shop-grid hidden"></div></div></div>
     <div id="profileScreen" class="hidden"><div class="glass-card"><button class="btn btn-secondary" id="profileBackBtn">◀ НАЗАД</button><div class="pet-area"><div class="pet-emoji" id="profilePetEmoji">🐦</div><div class="pet-name" id="profilePetName">Пушистик</div><div class="pet-level" id="profilePetLevel">Уровень 1</div><div class="progress-bar"><div class="progress-fill" id="profilePetProgress" style="width:0%"></div></div></div><div class="stats-row"><span>⭐ Баллов:</span><span id="profileScore">0</span></div><div class="stats-row"><span>✅ Правильных ответов:</span><span id="profileCorrect">0</span></div><div class="stats-row"><span>📊 Попыток:</span><span id="profileAttempts">0</span></div><div class="stats-row"><span>📈 Точность:</span><span id="profileAccuracy">0%</span></div><button class="btn btn-secondary" id="renamePetBtn">🏷️ СМЕНИТЬ ИМЯ</button><button class="btn btn-danger" id="resetStatsBtn">🔄 СБРОСИТЬ СТАТИСТИКУ</button></div></div>
-    <div id="settingsScreen" class="hidden"><div class="glass-card"><button class="btn btn-secondary" id="settingsBackBtn">◀ НАЗАД</button><h2 style="color:white;text-align:center;margin:12px 0">⚙ НАСТРОЙКИ</h2><div class="settings-option"><span class="settings-label">🎵 Музыка</span><div class="toggle-switch" id="musicToggle"></div></div><div class="settings-option"><span class="settings-label">🔊 Звуки</span><div class="toggle-switch" id="sfxToggle"></div></div><div class="settings-option"><span class="settings-label">📖 Объяснение ошибок</span><div class="toggle-switch" id="explainToggle"></div></div><div class="settings-option"><span class="settings-label">🖼️ Качество</span></div><div class="quality-buttons"><div class="quality-btn" data-quality="low">🟢 Низкое</div><div class="quality-btn" data-quality="medium">🟡 Среднее</div><div class="quality-btn" data-quality="high">🔴 Высокое</div></div><button class="btn btn-danger" id="resetBalanceBtn">💰 ОБНУЛИТЬ БАЛЛЫ</button></div></div>
+    <div id="settingsScreen" class="hidden">
+        <div class="glass-card">
+            <button class="btn btn-secondary" id="settingsBackBtn">◀ НАЗАД</button>
+            <h2 style="color:white;text-align:center;margin:12px 0">⚙ НАСТРОЙКИ</h2>
+            <div class="settings-option"><span class="settings-label">🎵 Фоновая музыка</span><div class="toggle-switch" id="musicToggle"></div></div>
+            <div class="settings-option"><span class="settings-label">🔊 Звуки эффектов</span><div class="toggle-switch" id="sfxToggle"></div></div>
+            <div class="settings-option"><span class="settings-label">📢 Громкость музыки</span><input type="range" id="musicVolume" class="volume-slider" min="0" max="100" value="30"></div>
+            <div class="settings-option"><span class="settings-label">📖 Объяснение ошибок</span><div class="toggle-switch" id="explainToggle"></div></div>
+            <div class="settings-option"><span class="settings-label">🖼️ Качество</span></div>
+            <div class="quality-buttons"><div class="quality-btn" data-quality="low">🟢 Низкое</div><div class="quality-btn" data-quality="medium">🟡 Среднее</div><div class="quality-btn" data-quality="high">🔴 Высокое</div></div>
+            <button class="btn btn-danger" id="resetBalanceBtn">💰 ОБНУЛИТЬ БАЛЛЫ</button>
+        </div>
+    </div>
 
     <div id="renameDialog" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(20px); display:none; justify-content:center; align-items:center; z-index:1000"><div class="glass-card" style="width:300px"><h3 style="color:white;text-align:center">Имя питомца</h3><input type="text" id="newPetName" style="width:100%; padding:12px; margin:15px 0; border-radius:30px; border:none; background:#2c2c2e; color:white; text-align:center"><button class="btn btn-primary" id="saveNameBtn">СОХРАНИТЬ</button><button class="btn btn-secondary" id="cancelNameBtn">ОТМЕНА</button></div></div>
 </div>
 
 <script>
-    // === ЗВУКИ ===
-    let musicEnabled=true, sfxEnabled=true, explainEnabled=true;
-    function playCorrect(){ if(sfxEnabled) try{ let ctx=new (AudioContext||webkitAudioContext)(), o=ctx.createOscillator(), g=ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.frequency.value=880; g.gain.value=0.2; o.start(); g.gain.exponentialRampToValueAtTime(0.00001,ctx.currentTime+0.5); o.stop(ctx.currentTime+0.5); }catch(e){} }
-    function playWrong(){ if(sfxEnabled) try{ let ctx=new (AudioContext||webkitAudioContext)(), o=ctx.createOscillator(), g=ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.frequency.value=440; g.gain.value=0.15; o.start(); g.gain.exponentialRampToValueAtTime(0.00001,ctx.currentTime+0.3); o.stop(ctx.currentTime+0.3); }catch(e){} }
-    function playLevelUp(){ if(sfxEnabled) try{ let ctx=new (AudioContext||webkitAudioContext)(); for(let i=0;i<3;i++){ let o=ctx.createOscillator(), g=ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.frequency.value=660+i*110; g.gain.value=0.1; o.start(ctx.currentTime+i*0.1); g.gain.exponentialRampToValueAtTime(0.00001,ctx.currentTime+i*0.1+0.3); o.stop(ctx.currentTime+i*0.1+0.3); } }catch(e){} }
+    // ==================== ЗВУКИ (твои файлы) ====================
+    let musicEnabled = true;
+    let sfxEnabled = true;
+    let musicVolume = 0.3;  // 0-1
+    let backgroundMusic = null;
+    
+    // Создаём аудио объекты
+    const correctSound = new Audio('https://taizervip.github.io/sounds/193921.mp3');
+    const wrongSound = new Audio('https://taizervip.github.io/sounds/011fb0a5-8658-4a7f-a9c1-25ec2e3f4320.mp3');
+    const clickSound = new Audio('https://taizervip.github.io/sounds/69880c1f5e57698.mp3');
+    const bgMusic = new Audio('https://taizervip.github.io/sounds/muzyka-iz-multfilma-spanch-gubka-bob-kvadratnye-shtany.mp3');
+    
+    // Настройка фоновой музыки
+    bgMusic.loop = true;
+    bgMusic.volume = musicVolume;
+    
+    function playCorrect() {
+        if (!sfxEnabled) return;
+        correctSound.currentTime = 0;
+        correctSound.play().catch(e => console.log('Sound error:', e));
+    }
+    
+    function playWrong() {
+        if (!sfxEnabled) return;
+        wrongSound.currentTime = 0;
+        wrongSound.play().catch(e => console.log('Sound error:', e));
+    }
+    
+    function playClick() {
+        if (!sfxEnabled) return;
+        clickSound.currentTime = 0;
+        clickSound.play().catch(e => console.log('Sound error:', e));
+    }
+    
+    function playLevelUp() {
+        if (!sfxEnabled) return;
+        // можно использовать тот же звук, что и для правильного ответа
+        playCorrect();
+    }
+    
+    function startBackgroundMusic() {
+        if (!musicEnabled) return;
+        bgMusic.volume = musicVolume;
+        bgMusic.play().catch(e => console.log('Music autoplay blocked:', e));
+    }
+    
+    function stopBackgroundMusic() {
+        bgMusic.pause();
+        bgMusic.currentTime = 0;
+    }
+    
+    function setMusicVolume(value) {
+        musicVolume = value / 100;
+        bgMusic.volume = musicVolume;
+        saveData();
+    }
+    
+    function toggleMusic() {
+        musicEnabled = !musicEnabled;
+        if (musicEnabled) {
+            startBackgroundMusic();
+        } else {
+            stopBackgroundMusic();
+        }
+        updateToggleUI();
+        saveData();
+    }
+    
+    function toggleSFX() {
+        sfxEnabled = !sfxEnabled;
+        updateToggleUI();
+        saveData();
+    }
 
-    // === ДАННЫЕ ===
-    let gameData={score:0,correctAnswers:0,totalAttempts:0,petLevel:1,petExp:0,petName:"Пушистик",currentSkin:"🐦 Птица",currentBg:"forest"};
+    // ==================== ДАННЫЕ ====================
+    let gameData = {score:0,correctAnswers:0,totalAttempts:0,petLevel:1,petExp:0,petName:"Пушистик",currentSkin:"🐦 Птица",currentBg:"forest"};
     const skins={"🐦 Птица":{emoji:"🐦",price:0,owned:true},"🐱 Кот":{emoji:"🐱",price:50,owned:false},"🐶 Собака":{emoji:"🐶",price:50,owned:false},"🦊 Лиса":{emoji:"🦊",price:100,owned:false},"🐼 Панда":{emoji:"🐼",price:150,owned:false},"🐸 Лягушка":{emoji:"🐸",price:80,owned:false},"🐧 Пингвин":{emoji:"🐧",price:120,owned:false},"🦄 Единорог":{emoji:"🦄",price:200,owned:false}};
     const backgrounds={forest:{name:"🌲 Лес",price:0,owned:true},ocean:{name:"🌊 Океан",price:30,owned:false},space:{name:"🚀 Космос",price:50,owned:false},desert:{name:"🏜️ Пустыня",price:40,owned:false},city:{name:"🌃 Город",price:60,owned:false}};
-    function loadData(){ let s=localStorage.getItem("mathTrainerData"); if(s){ try{ let d=JSON.parse(s); gameData={...gameData,...d}; if(d.ownedSkins) for(let sk in skins) if(d.ownedSkins[sk]) skins[sk].owned=true; if(d.ownedBgs) for(let bg in backgrounds) if(d.ownedBgs[bg]) backgrounds[bg].owned=true; if(d.musicEnabled!==undefined) musicEnabled=d.musicEnabled; if(d.sfxEnabled!==undefined) sfxEnabled=d.sfxEnabled; if(d.explainEnabled!==undefined) explainEnabled=d.explainEnabled; if(d.quality) document.body.className=document.body.className.replace(/quality-\w+/,'quality-'+d.quality); }catch(e){} } updateToggleUI(); }
-    function saveData(){ let toSave={...gameData, ownedSkins:{}, ownedBgs:{}, musicEnabled, sfxEnabled, explainEnabled, quality:document.body.className.match(/quality-(\w+)/)?.[1]||"high"}; for(let s in skins) if(skins[s].owned && skins[s].price>0) toSave.ownedSkins[s]=true; for(let b in backgrounds) if(backgrounds[b].owned && backgrounds[b].price>0) toSave.ownedBgs[b]=true; localStorage.setItem("mathTrainerData",JSON.stringify(toSave)); }
+    
+    function loadData(){ let s=localStorage.getItem("mathTrainerData"); if(s){ try{ let d=JSON.parse(s); gameData={...gameData,...d}; if(d.ownedSkins) for(let sk in skins) if(d.ownedSkins[sk]) skins[sk].owned=true; if(d.ownedBgs) for(let bg in backgrounds) if(d.ownedBgs[bg]) backgrounds[bg].owned=true; if(d.musicEnabled!==undefined) musicEnabled=d.musicEnabled; if(d.sfxEnabled!==undefined) sfxEnabled=d.sfxEnabled; if(d.musicVolume!==undefined) musicVolume=d.musicVolume/100; if(d.quality) document.body.className=document.body.className.replace(/quality-\w+/,'quality-'+d.quality); }catch(e){} } updateToggleUI(); if(musicEnabled) setTimeout(startBackgroundMusic,100); }
+    function saveData(){ let toSave={...gameData, ownedSkins:{}, ownedBgs:{}, musicEnabled, sfxEnabled, musicVolume:musicVolume*100, quality:document.body.className.match(/quality-(\w+)/)?.[1]||"high"}; for(let s in skins) if(skins[s].owned && skins[s].price>0) toSave.ownedSkins[s]=true; for(let b in backgrounds) if(backgrounds[b].owned && backgrounds[b].price>0) toSave.ownedBgs[b]=true; localStorage.setItem("mathTrainerData",JSON.stringify(toSave)); }
     function updateToggleUI(){ let mt=document.getElementById("musicToggle"), st=document.getElementById("sfxToggle"), et=document.getElementById("explainToggle"); if(mt) mt.className=`toggle-switch ${musicEnabled?'active':''}`; if(st) st.className=`toggle-switch ${sfxEnabled?'active':''}`; if(et) et.className=`toggle-switch ${explainEnabled?'active':''}`; }
     function animatePet(anim){ let pe=document.querySelector(".pet-emoji"); if(!pe) return; pe.classList.remove("pet-animation-happy","pet-animation-sad"); void pe.offsetWidth; pe.classList.add(`pet-animation-${anim}`); setTimeout(()=>pe.classList.remove(`pet-animation-${anim}`),500); }
     function applyTheme(){ document.body.className=document.body.className.replace(/theme-\w+/,`theme-${gameData.currentBg}`); }
     function addPetExp(amt){ let old=gameData.petLevel; gameData.petExp+=amt; let need=gameData.petLevel*10; while(gameData.petExp>=need){ gameData.petExp-=need; gameData.petLevel++; need=gameData.petLevel*10; playLevelUp(); alert(`🎉 ${gameData.petName} достиг ${gameData.petLevel} уровня!`); } if(gameData.petLevel>old) animatePet("happy"); updatePetUI(); saveData(); }
     function updatePetUI(){ let need=gameData.petLevel*10, per=(gameData.petExp/need)*100, emoji=skins[gameData.currentSkin]?.emoji||"🐦"; document.querySelectorAll(".pet-emoji").forEach(el=>el.innerText=emoji); document.querySelectorAll(".pet-name").forEach(el=>el.innerText=gameData.petName); document.querySelectorAll(".pet-level").forEach(el=>el.innerHTML=`Уровень ${gameData.petLevel} • ${gameData.petExp}/${need} опыта`); document.querySelectorAll(".progress-fill").forEach(el=>el.style.width=`${per}%`); document.getElementById("menuScore").innerHTML=`⭐ ${gameData.score} баллов`; if(document.getElementById("gameScore")) document.getElementById("gameScore").innerHTML=`⭐ ${gameData.score}`; if(document.getElementById("shopScore")) document.getElementById("shopScore").innerHTML=`⭐ ${gameData.score} баллов`; if(document.getElementById("profileScore")){ document.getElementById("profileScore").innerText=gameData.score; document.getElementById("profileCorrect").innerText=gameData.correctAnswers; document.getElementById("profileAttempts").innerText=gameData.totalAttempts; let acc=gameData.totalAttempts>0?((gameData.correctAnswers/gameData.totalAttempts)*100).toFixed(1):0; document.getElementById("profileAccuracy").innerText=`${acc}%`; } }
 
-    // === ГЕНЕРАЦИЯ ПРИМЕРОВ ===
+    // ==================== ГЕНЕРАЦИЯ ПРИМЕРОВ ====================
     let currentDifficulty="easy";
     function generateQuestion(){
-        if(currentDifficulty==="hard"){
-            let a=Math.floor(Math.random()*8)+2, b=Math.floor(Math.random()*9)+1;
-            return {text:`${a} × ${b}`, answer:a*b, type:"mult"};
-        }
+        if(currentDifficulty==="hard"){ let a=Math.floor(Math.random()*8)+2, b=Math.floor(Math.random()*9)+1; return {text:`${a} × ${b}`, answer:a*b, type:"mult"}; }
         let maxAns=currentDifficulty==="easy"?50:100;
         for(let t=0;t<30;t++){
             if(Math.random()<0.5){
@@ -267,13 +315,8 @@
         return {text:"10 + 5", answer:15, type:"addsub"};
     }
 
-    // === ОБЪЯСНЕНИЕ В СТОЛБИК ===
     function getExplanationHTML(questionText, correctAnswer){
-        if(currentDifficulty==="hard"){
-            let parts=questionText.split(' × ');
-            let a=parseInt(parts[0]), b=parseInt(parts[1]);
-            return `<div class="column-math">  ${a}<br>× ${b}<br>─────<br>  ${a*b}</div><div class="step-text">📖 Таблица умножения:<br>${a} × ${b} = ${a*b}</div>`;
-        }
+        if(currentDifficulty==="hard"){ let parts=questionText.split(' × '); let a=parseInt(parts[0]), b=parseInt(parts[1]); return `<div class="column-math">  ${a}<br>× ${b}<br>─────<br>  ${a*b}</div><div class="step-text">📖 Таблица умножения:<br>${a} × ${b} = ${a*b}</div>`; }
         let parts=questionText.split(' ');
         let a=parseInt(parts[0]), op=parts[1], b=parseInt(parts[2]);
         if(op==='+'){
@@ -293,45 +336,17 @@
         return "";
     }
 
-    // === ИГРОВЫЕ ПЕРЕМЕННЫЕ ===
-    let currentQuestion=null, canAnswer=true, gameActive=false, waitingForExplain=false, wrongAnswerValue=null;
-
-    function newQuestion(){
-        if(!gameActive) return;
-        canAnswer=true;
-        waitingForExplain=false;
-        currentQuestion=generateQuestion();
-        document.getElementById("question").innerText=currentQuestion.text;
-        document.getElementById("answerInput").value="";
-        document.getElementById("status").innerHTML="";
-        document.getElementById("explanationButtons").classList.add("hidden");
-        document.getElementById("explanationBox").classList.add("hidden");
-        document.getElementById("checkBtn").disabled=false;
-        document.getElementById("answerInput").disabled=false;
-        document.getElementById("answerInput").focus();
-    }
-
-    function continueAfterWrong(){
-        waitingForExplain=false;
-        newQuestion();
-    }
-
-    function showExplanation(){
-        if(!waitingForExplain) return;
-        let expHTML=getExplanationHTML(currentQuestion.text, currentQuestion.answer);
-        let expBox=document.getElementById("explanationBox");
-        expBox.innerHTML=`<div style="font-weight:600; margin-bottom:12px; color:#ffd966;">📖 РЕШЕНИЕ В СТОЛБИК</div>${expHTML}`;
-        expBox.classList.remove("hidden");
-    }
-
+    // ==================== ИГРА ====================
+    let currentQuestion=null, canAnswer=true, gameActive=false, waitingForExplain=false, explainEnabled=true;
+    
+    function newQuestion(){ if(!gameActive) return; canAnswer=true; waitingForExplain=false; currentQuestion=generateQuestion(); document.getElementById("question").innerText=currentQuestion.text; document.getElementById("answerInput").value=""; document.getElementById("status").innerHTML=""; document.getElementById("explanationButtons").classList.add("hidden"); document.getElementById("explanationBox").classList.add("hidden"); document.getElementById("checkBtn").disabled=false; document.getElementById("answerInput").disabled=false; document.getElementById("answerInput").focus(); }
+    function continueAfterWrong(){ waitingForExplain=false; newQuestion(); }
+    function showExplanation(){ if(!waitingForExplain) return; let expHTML=getExplanationHTML(currentQuestion.text, currentQuestion.answer); document.getElementById("explanationBox").innerHTML=`<div style="font-weight:600; margin-bottom:12px; color:#ffd966;">📖 РЕШЕНИЕ В СТОЛБИК</div>${expHTML}`; document.getElementById("explanationBox").classList.remove("hidden"); }
+    
     async function checkAnswer(){
         if(!gameActive || !canAnswer || waitingForExplain) return;
         let user=parseInt(document.getElementById("answerInput").value);
-        if(isNaN(user)){
-            document.getElementById("status").innerHTML="❌ Введи число!";
-            document.getElementById("status").className="status wrong";
-            return;
-        }
+        if(isNaN(user)){ document.getElementById("status").innerHTML="❌ Введи число!"; document.getElementById("status").className="status wrong"; return; }
         let points=currentDifficulty==="easy"?1:(currentDifficulty==="medium"?2:0.5);
         canAnswer=false;
         document.getElementById("checkBtn").disabled=true;
@@ -359,17 +374,12 @@
             document.getElementById("status").innerHTML=`❌ НЕПРАВИЛЬНО! Правильный ответ: ${currentQuestion.answer}`;
             document.getElementById("status").className="status wrong";
             updatePetUI();
-            if(explainEnabled){
-                waitingForExplain=true;
-                document.getElementById("explanationButtons").classList.remove("hidden");
-                document.getElementById("explanationBox").classList.add("hidden");
-            } else {
-                setTimeout(()=>{ if(gameActive) newQuestion(); },2000);
-            }
+            if(explainEnabled){ waitingForExplain=true; document.getElementById("explanationButtons").classList.remove("hidden"); document.getElementById("explanationBox").classList.add("hidden"); } 
+            else { setTimeout(()=>{ if(gameActive) newQuestion(); },2000); }
         }
     }
 
-    // === НАВИГАЦИЯ ===
+    // ==================== НАВИГАЦИЯ ====================
     function showScreen(screen){
         document.getElementById("menuScreen").classList.add("hidden");
         document.getElementById("difficultyScreen").classList.add("hidden");
@@ -383,44 +393,48 @@
         if(screen==="shop"){ document.getElementById("shopScreen").classList.remove("hidden"); renderShop(); }
         if(screen==="profile"){ document.getElementById("profileScreen").classList.remove("hidden"); updatePetUI(); }
         if(screen==="settings"){ document.getElementById("settingsScreen").classList.remove("hidden"); updateSettingsUI(); }
+        playClick();
     }
+    
     function renderShop(){ document.getElementById("shopScore").innerHTML=`⭐ ${gameData.score} баллов`; let skinsGrid=document.getElementById("skinsGrid"), bgGrid=document.getElementById("bgGrid"); skinsGrid.innerHTML=""; for(let [name,skin] of Object.entries(skins)){ let d=document.createElement("div"); d.className="shop-item"; d.innerHTML=`<div class="shop-item-emoji">${skin.emoji}</div><div class="shop-item-name">${name}</div><div class="shop-item-price">💰 ${skin.price}</div>${skin.owned?(gameData.currentSkin===name?'<div style="color:#ff9f43;font-size:0.7rem">✅ НАДЕТО</div>':'<div style="color:#2ecc71;font-size:0.7rem">✅ Владелец</div>'):''}`; if(!skin.owned) d.onclick=()=>buySkin(name); else if(gameData.currentSkin!==name) d.onclick=()=>equipSkin(name); skinsGrid.appendChild(d); } bgGrid.innerHTML=""; for(let [id,bg] of Object.entries(backgrounds)){ let d=document.createElement("div"); d.className="shop-item"; d.innerHTML=`<div class="shop-item-emoji">${bg.name.split(" ")[0]}</div><div class="shop-item-name">${bg.name}</div><div class="shop-item-price">💰 ${bg.price}</div>${bg.owned?(gameData.currentBg===id?'<div style="color:#ff9f43;font-size:0.7rem">🔵 АКТИВЕН</div>':'<div style="color:#2ecc71;font-size:0.7rem">✅ Владелец</div>'):''}`; if(!bg.owned) d.onclick=()=>buyBg(id); else if(gameData.currentBg!==id) d.onclick=()=>equipBg(id); bgGrid.appendChild(d); } }
     function buySkin(name){ let skin=skins[name]; if(gameData.score>=skin.price){ gameData.score-=skin.price; skin.owned=true; saveData(); renderShop(); updatePetUI(); playCorrect(); }else alert(`Не хватает! Нужно ${skin.price} баллов`); }
-    function equipSkin(name){ gameData.currentSkin=name; saveData(); renderShop(); updatePetUI(); if(gameActive) document.getElementById("gamePet").innerHTML=`${skins[name].emoji} Lv.${gameData.petLevel}`; animatePet("happy"); }
+    function equipSkin(name){ gameData.currentSkin=name; saveData(); renderShop(); updatePetUI(); if(gameActive) document.getElementById("gamePet").innerHTML=`${skins[name].emoji} Lv.${gameData.petLevel}`; animatePet("happy"); playClick(); }
     function buyBg(id){ let bg=backgrounds[id]; if(gameData.score>=bg.price){ gameData.score-=bg.price; bg.owned=true; saveData(); renderShop(); updatePetUI(); playCorrect(); }else alert(`Не хватает! Нужно ${bg.price} баллов`); }
-    function equipBg(id){ gameData.currentBg=id; applyTheme(); saveData(); renderShop(); updatePetUI(); }
-    function updateSettingsUI(){ updateToggleUI(); let q=document.body.className.match(/quality-(\w+)/)?.[1]||"high"; document.querySelectorAll(".quality-btn").forEach(btn=>{ if(btn.dataset.quality===q) btn.classList.add("active"); else btn.classList.remove("active"); }); }
-    function setQuality(q){ let c=document.body.className; c=c.replace(/quality-\w+/,`quality-${q}`); document.body.className=c; saveData(); updateSettingsUI(); }
+    function equipBg(id){ gameData.currentBg=id; applyTheme(); saveData(); renderShop(); updatePetUI(); playClick(); }
+    function updateSettingsUI(){ updateToggleUI(); let q=document.body.className.match(/quality-(\w+)/)?.[1]||"high"; document.querySelectorAll(".quality-btn").forEach(btn=>{ if(btn.dataset.quality===q) btn.classList.add("active"); else btn.classList.remove("active"); }); let volSlider=document.getElementById("musicVolume"); if(volSlider) volSlider.value=musicVolume*100; }
+    function setQuality(q){ let c=document.body.className; c=c.replace(/quality-\w+/,`quality-${q}`); document.body.className=c; saveData(); updateSettingsUI(); playClick(); }
     function resetBalance(){ if(confirm("ОБНУЛИТЬ ВСЕ БАЛЛЫ?")){ gameData.score=0; saveData(); updatePetUI(); alert("Баллы обнулены!"); } }
     function startGame(diff){ currentDifficulty=diff; gameActive=true; showScreen("game"); }
 
     loadData(); applyTheme(); updatePetUI();
-    document.getElementById("playBtn").onclick=()=>showScreen("difficulty");
-    document.getElementById("shopBtn").onclick=()=>showScreen("shop");
-    document.getElementById("profileBtn").onclick=()=>showScreen("profile");
-    document.getElementById("settingsBtn").onclick=()=>showScreen("settings");
-    document.getElementById("backToMenuBtn").onclick=()=>showScreen("menu");
-    document.getElementById("gameMenuBtn").onclick=()=>{ gameActive=false; showScreen("menu"); };
-    document.getElementById("shopBackBtn").onclick=()=>showScreen("menu");
-    document.getElementById("profileBackBtn").onclick=()=>showScreen("menu");
-    document.getElementById("settingsBackBtn").onclick=()=>showScreen("menu");
-    document.getElementById("easyBtn").onclick=()=>startGame("easy");
-    document.getElementById("mediumBtn").onclick=()=>startGame("medium");
-    document.getElementById("hardBtn").onclick=()=>startGame("hard");
+    
+    document.getElementById("playBtn").onclick=()=>{ playClick(); showScreen("difficulty"); };
+    document.getElementById("shopBtn").onclick=()=>{ playClick(); showScreen("shop"); };
+    document.getElementById("profileBtn").onclick=()=>{ playClick(); showScreen("profile"); };
+    document.getElementById("settingsBtn").onclick=()=>{ playClick(); showScreen("settings"); };
+    document.getElementById("backToMenuBtn").onclick=()=>{ playClick(); showScreen("menu"); };
+    document.getElementById("gameMenuBtn").onclick=()=>{ playClick(); gameActive=false; showScreen("menu"); };
+    document.getElementById("shopBackBtn").onclick=()=>{ playClick(); showScreen("menu"); };
+    document.getElementById("profileBackBtn").onclick=()=>{ playClick(); showScreen("menu"); };
+    document.getElementById("settingsBackBtn").onclick=()=>{ playClick(); showScreen("menu"); };
+    document.getElementById("easyBtn").onclick=()=>{ playClick(); startGame("easy"); };
+    document.getElementById("mediumBtn").onclick=()=>{ playClick(); startGame("medium"); };
+    document.getElementById("hardBtn").onclick=()=>{ playClick(); startGame("hard"); };
     document.getElementById("checkBtn").onclick=checkAnswer;
-    document.getElementById("continueBtn").onclick=()=>continueAfterWrong();
-    document.getElementById("explainBtn").onclick=()=>showExplanation();
+    document.getElementById("continueBtn").onclick=()=>{ playClick(); continueAfterWrong(); };
+    document.getElementById("explainBtn").onclick=()=>{ playClick(); showExplanation(); };
     document.getElementById("answerInput").addEventListener("keypress",(e)=>{ if(e.key==="Enter") checkAnswer(); });
-    document.getElementById("skinsTabBtn").onclick=()=>{ document.getElementById("skinsGrid").classList.remove("hidden"); document.getElementById("bgGrid").classList.add("hidden"); };
-    document.getElementById("bgTabBtn").onclick=()=>{ document.getElementById("skinsGrid").classList.add("hidden"); document.getElementById("bgGrid").classList.remove("hidden"); };
-    document.getElementById("musicToggle").onclick=()=>{ musicEnabled=!musicEnabled; updateToggleUI(); saveData(); };
-    document.getElementById("sfxToggle").onclick=()=>{ sfxEnabled=!sfxEnabled; updateToggleUI(); saveData(); };
-    document.getElementById("explainToggle").onclick=()=>{ explainEnabled=!explainEnabled; updateToggleUI(); saveData(); };
-    document.querySelectorAll(".quality-btn").forEach(btn=>btn.onclick=()=>setQuality(btn.dataset.quality));
-    document.getElementById("resetBalanceBtn").onclick=resetBalance;
-    document.getElementById("renamePetBtn").onclick=()=>{ document.getElementById("newPetName").value=gameData.petName; document.getElementById("renameDialog").style.display="flex"; };
-    document.getElementById("saveNameBtn").onclick=()=>{ let nn=document.getElementById("newPetName").value.trim(); if(nn){ gameData.petName=nn; saveData(); updatePetUI(); } document.getElementById("renameDialog").style.display="none"; };
-    document.getElementById("cancelNameBtn").onclick=()=>document.getElementById("renameDialog").style.display="none";
+    document.getElementById("skinsTabBtn").onclick=()=>{ playClick(); document.getElementById("skinsGrid").classList.remove("hidden"); document.getElementById("bgGrid").classList.add("hidden"); };
+    document.getElementById("bgTabBtn").onclick=()=>{ playClick(); document.getElementById("skinsGrid").classList.add("hidden"); document.getElementById("bgGrid").classList.remove("hidden"); };
+    document.getElementById("musicToggle").onclick=()=>{ playClick(); toggleMusic(); };
+    document.getElementById("sfxToggle").onclick=()=>{ playClick(); toggleSFX(); };
+    document.getElementById("explainToggle").onclick=()=>{ playClick(); explainEnabled=!explainEnabled; updateToggleUI(); saveData(); };
+    document.getElementById("musicVolume").onchange=(e)=>{ setMusicVolume(e.target.value); };
+    document.querySelectorAll(".quality-btn").forEach(btn=>btn.onclick=()=>{ playClick(); setQuality(btn.dataset.quality); });
+    document.getElementById("resetBalanceBtn").onclick=()=>{ playClick(); resetBalance(); };
+    document.getElementById("renamePetBtn").onclick=()=>{ playClick(); document.getElementById("newPetName").value=gameData.petName; document.getElementById("renameDialog").style.display="flex"; };
+    document.getElementById("saveNameBtn").onclick=()=>{ playClick(); let nn=document.getElementById("newPetName").value.trim(); if(nn){ gameData.petName=nn; saveData(); updatePetUI(); } document.getElementById("renameDialog").style.display="none"; };
+    document.getElementById("cancelNameBtn").onclick=()=>{ playClick(); document.getElementById("renameDialog").style.display="none"; };
     document.getElementById("resetStatsBtn").onclick=()=>{ if(confirm("Сбросить всю статистику?")){ gameData={score:0,correctAnswers:0,totalAttempts:0,petLevel:1,petExp:0,petName:"Пушистик",currentSkin:"🐦 Птица",currentBg:"forest"}; for(let s in skins) skins[s].owned=(s==="🐦 Птица"); for(let b in backgrounds) backgrounds[b].owned=(b==="forest"); saveData(); applyTheme(); updatePetUI(); showScreen("menu"); } };
 </script>
 </body>
