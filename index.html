@@ -54,7 +54,7 @@
         @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
         @keyframes eatAnim { 0%{transform:scale(1)} 50%{transform:scale(0.9)} 100%{transform:scale(1)} }
         @keyframes walkAnim { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
-        
+
         .pet-name { font-size: 1.5rem; font-weight: 600; color: white; margin: 8px 0 4px; }
         .pet-level { font-size: 0.85rem; color: #ffd966; }
         .progress-bar { width: 100%; height: 8px; background: rgba(255,255,255,0.2); border-radius: 20px; overflow: hidden; margin: 12px 0; }
@@ -104,134 +104,326 @@
         .toggle-switch.active { background: #34c759; }
         .toggle-switch::after { content: ''; position: absolute; width: 24px; height: 24px; background: white; border-radius: 50%; top: 2px; left: 3px; transition: 0.2s; }
         .toggle-switch.active::after { left: 25px; }
-        
+
         .volume-slider { width: 150px; height: 6px; -webkit-appearance: none; background: rgba(255,255,255,0.3); border-radius: 10px; }
         .volume-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #ff9f43; border-radius: 50%; cursor: pointer; }
-        
+
         .quality-buttons { display: flex; gap: 8px; }
         .quality-btn { flex: 1; padding: 10px; border-radius: 40px; background: rgba(255,255,255,0.15); color: white; text-align: center; cursor: pointer; }
         .quality-btn.active { background: #ff9f43; color: #1c1c1e; }
 
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(20px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .loader.active { display: flex; }
+        .loader-content { text-align: center; }
+        .loader-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top-color: #ff9f43;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loader-text { color: white; font-size: 1.2rem; }
+
         .mini-game { text-align: center; }
         .mini-game-btn { display: inline-block; padding: 12px 24px; margin: 8px; background: #ff9f43; border: none; border-radius: 40px; font-size: 1.2rem; cursor: pointer; }
         .mini-game-input { padding: 10px; font-size: 1.2rem; text-align: center; border-radius: 30px; border: none; margin: 10px; }
-
+        
         .hidden { display: none; }
+        .flex { display: flex; }
+        .rename-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .rename-content {
+            background: #2c2c2e;
+            padding: 24px;
+            border-radius: 28px;
+            width: 280px;
+            text-align: center;
+        }
+        .rename-content input {
+            width: 100%;
+            padding: 12px;
+            margin: 16px 0;
+            border-radius: 30px;
+            border: none;
+            font-size: 16px;
+            text-align: center;
+        }
+        .rename-content button {
+            padding: 10px 20px;
+            margin: 0 8px;
+            border-radius: 30px;
+            border: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body class="theme-forest">
 <div class="container" id="app">
+    <div id="loader" class="loader">
+        <div class="loader-content">
+            <div class="loader-spinner"></div>
+            <div class="loader-text">Загрузка...</div>
+        </div>
+    </div>
+
+    <!-- МЕНЮ -->
     <div id="menuScreen">
         <div class="glass-card pet-area">
             <div class="pet-emoji" id="petEmoji">🐶</div>
             <div class="pet-name" id="petName">Пушистик</div>
-            <div class="pet-level" id="petLevel">Уровень 1</div>
-            <div class="progress-bar"><div class="progress-fill" id="petProgress" style="width:0%"></div></div>
-            <div class="score-display" id="menuScore">⭐ 0 баллов</div>
+            <div class="pet-level" id="petLevel">Уровень 1 • 0/100 опыта</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+            <div class="score-display">⭐ Баллы: <span id="scoreDisplay">0</span></div>
         </div>
-        <div class="glass-card">
-            <button class="btn btn-primary" id="playBtn">🚀 НАЧАТЬ</button>
-            <button class="btn btn-shop" id="shopBtn">🛒 МАГАЗИН</button>
-            <button class="btn btn-secondary" id="petActionsBtn">🐶 ПИТОМЕЦ</button>
-            <button class="btn btn-secondary" id="profileBtn">👤 ПРОФИЛЬ</button>
-            <button class="btn btn-settings" id="settingsBtn">⚙ НАСТРОЙКИ</button>
-        </div>
+        <button class="btn btn-primary" id="playBtn">🎮 Играть</button>
+        <button class="btn btn-shop" id="shopBtn">🛒 Магазин</button>
+        <button class="btn" id="petActionsBtn">🐾 Питомец</button>
+        <button class="btn" id="profileBtn">📊 Профиль</button>
+        <button class="btn" id="settingsBtn">⚙️ Настройки</button>
     </div>
 
+    <!-- ВЫБОР СЛОЖНОСТИ -->
     <div id="difficultyScreen" class="hidden">
-        <div class="glass-card">
-            <button class="btn btn-secondary" id="backToMenuBtn">◀ НАЗАД</button>
-            <h2 style="color:white; text-align:center; margin:20px 0;">Выбери уровень</h2>
-            <button class="btn btn-primary" id="easyBtn">🟢 ЛЁГКИЙ (≤50)</button>
-            <button class="btn btn-primary" id="mediumBtn">🟠 СРЕДНИЙ (≤100)</button>
-            <button class="btn btn-primary" id="hardBtn">🔴 ТАБЛИЦА УМНОЖЕНИЯ</button>
-        </div>
+        <div class="glass-card"><h2 style="color:white;">Выбери сложность</h2></div>
+        <button class="btn btn-success" id="easyBtn">🍀 Лёгкая</button>
+        <button class="btn btn-primary" id="mediumBtn">⭐ Средняя</button>
+        <button class="btn btn-danger" id="hardBtn">🔥 Сложная</button>
+        <button class="btn btn-secondary" id="backToMenuBtn">Назад</button>
     </div>
 
+    <!-- ИГРА -->
     <div id="gameScreen" class="hidden">
         <div class="glass-card">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                <button class="btn btn-secondary" style="width: auto; padding: 8px 20px; margin:0" id="gameMenuBtn">◀ МЕНЮ</button>
-                <div id="gamePet">🐶 Lv.1</div>
-                <div class="score-display" id="gameScore">⭐ 0</div>
-            </div>
+            <div class="pet-emoji" id="gamePet">🐶 Lv.1</div>
             <div class="question" id="question">0 + 0</div>
-            <input type="number" id="answerInput" class="answer-input" placeholder="?" autofocus>
-            <button class="btn btn-primary" id="checkBtn" style="margin-top: 12px;">✅ ПРОВЕРИТЬ</button>
-            <div class="status" id="status"></div>
+            <input type="number" id="answerInput" class="answer-input" placeholder="Ответ">
+            <button class="btn btn-primary" id="checkBtn">✅ Проверить</button>
+            <div class="status" id="gameStatus"></div>
         </div>
+        <button class="btn btn-secondary" id="gameMenuBtn">🏠 В меню</button>
     </div>
 
+    <!-- МАГАЗИН -->
+    <div id="shopScreen" class="hidden">
+        <div class="glass-card"><h2 style="color:white;">Магазин</h2><div class="score-display">⭐ <span id="shopScore">0</span></div></div>
+        <div style="display:flex; gap:8px; margin-bottom:16px;">
+            <button class="btn" id="skinsTabBtn" style="flex:1;">🎨 Скины</button>
+            <button class="btn" id="bgTabBtn" style="flex:1;">🌄 Фоны</button>
+        </div>
+        <div id="skinsGrid" class="shop-grid"></div>
+        <div id="bgGrid" class="shop-grid hidden"></div>
+        <button class="btn btn-secondary" id="shopBackBtn">Назад</button>
+    </div>
+
+    <!-- ПРОФИЛЬ -->
+    <div id="profileScreen" class="hidden">
+        <div class="glass-card">
+            <div class="pet-emoji" id="profilePetEmoji">🐶</div>
+            <div class="pet-name" id="profilePetName">Пушистик</div>
+            <div class="stats-row">🏆 Всего баллов: <span id="totalScore">0</span></div>
+            <div class="stats-row">✅ Правильных ответов: <span id="correctCount">0</span></div>
+            <div class="stats-row">📊 Точность: <span id="profileAccuracy">0</span>%</div>
+            <div class="stats-row">📅 Дневник: <button class="btn" id="diaryBtn" style="display:inline-block; width:auto; padding:6px 12px;">📖 Открыть</button></div>
+        </div>
+        <button class="btn btn-secondary" id="profileBackBtn">Назад</button>
+    </div>
+
+    <!-- НАСТРОЙКИ -->
+    <div id="settingsScreen" class="hidden">
+        <div class="glass-card">
+            <div class="settings-option">
+                <span class="settings-label">🎵 Музыка</span>
+                <div class="toggle-switch" id="musicToggle"></div>
+            </div>
+            <div class="settings-option">
+                <span class="settings-label">🔊 Звуки</span>
+                <div class="toggle-switch" id="sfxToggle"></div>
+            </div>
+            <div class="settings-option">
+                <span class="settings-label">📢 Громкость музыки</span>
+                <input type="range" min="0" max="100" value="30" class="volume-slider" id="musicVolume">
+            </div>
+        </div>
+        <button class="btn btn-secondary" id="settingsBackBtn">Назад</button>
+    </div>
+
+    <!-- ДЕЙСТВИЯ С ПИТОМЦЕМ -->
     <div id="petActionsScreen" class="hidden">
         <div class="glass-card">
-            <button class="btn btn-secondary" id="petBackBtn">◀ НАЗАД</button>
-            <div class="pet-area">
-                <div class="pet-emoji" id="petActionsEmoji">🐶</div>
-                <div class="pet-name" id="petActionsName">Пушистик</div>
-                <div class="pet-level" id="petActionsLevel">Уровень 1</div>
-                <div class="progress-bar"><div class="progress-fill" id="petActionsProgress" style="width:0%"></div></div>
-            </div>
-            <div style="display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-top: 15px;">
-                <button class="btn btn-primary" id="feedBtn">🍎 КОРМИТЬ (10 баллов)</button>
-                <button class="btn btn-primary" id="walkBtn">🐾 ПРОГУЛКА</button>
-                <button class="btn btn-primary" id="dressBtn">🎽 ОДЕТЬ</button>
-                <button class="btn btn-primary" id="roomBtn">🏠 КОМНАТА</button>
-                <button class="btn btn-primary" id="diaryBtn">📖 ДНЕВНИК</button>
-                <button class="btn btn-primary" id="miniGameBtn">🎲 МИНИ-ИГРА</button>
-            </div>
+            <div class="pet-emoji" id="actionPetEmoji">🐶</div>
+            <div class="pet-name" id="actionPetName">Пушистик</div>
         </div>
+        <button class="btn btn-primary" id="feedBtn">🍖 Покормить (+10 опыта)</button>
+        <button class="btn btn-primary" id="walkBtn">🚶 Погулять (+15 опыта)</button>
+        <button class="btn btn-shop" id="dressBtn">👗 Одеть питомца</button>
+        <button class="btn btn-shop" id="roomBtn">🏠 Улучшить комнату</button>
+        <button class="btn" id="miniGameBtn">🎮 Мини-игра</button>
+        <button class="btn btn-secondary" id="petBackBtn">Назад</button>
     </div>
 
+    <!-- ОДЕВАЛКА -->
     <div id="dressScreen" class="hidden">
-        <div class="glass-card">
-            <button class="btn btn-secondary" id="dressBackBtn">◀ НАЗАД</button>
-            <h2 style="color:white; text-align:center;">🎽 ОДЕЖДА</h2>
-            <div class="shop-grid" id="clothesGrid"></div>
-        </div>
+        <div class="glass-card"><h2 style="color:white;">👕 Одежда</h2><div class="score-display">⭐ <span id="dressScore">0</span></div></div>
+        <div id="clothesShopGrid" class="shop-grid"></div>
+        <button class="btn btn-secondary" id="dressBackBtn">Назад</button>
     </div>
 
+    <!-- КОМНАТА -->
     <div id="roomScreen" class="hidden">
-        <div class="glass-card">
-            <button class="btn btn-secondary" id="roomBackBtn">◀ НАЗАД</button>
-            <h2 style="color:white; text-align:center;">🏠 КОМНАТА</h2>
-            <div class="shop-grid" id="roomGrid"></div>
-        </div>
+        <div class="glass-card"><h2 style="color:white;">🏠 Комнаты</h2><div class="score-display">⭐ <span id="roomScore">0</span></div></div>
+        <div id="roomGrid" class="shop-grid"></div>
+        <button class="btn btn-secondary" id="roomBackBtn">Назад</button>
     </div>
 
+    <!-- ДНЕВНИК -->
     <div id="diaryScreen" class="hidden">
         <div class="glass-card">
-            <button class="btn btn-secondary" id="diaryBackBtn">◀ НАЗАД</button>
-            <h2 style="color:white; text-align:center;">📖 ДНЕВНИК ПИТОМЦА</h2>
-            <div id="diaryEntries" style="max-height: 400px; overflow-y: auto; padding: 10px;"></div>
+            <h2 style="color:white;">📔 Дневник событий</h2>
+            <div id="diaryList" style="max-height: 400px; overflow-y: auto; margin-top: 16px;"></div>
         </div>
+        <button class="btn btn-secondary" id="diaryBackBtn">Назад</button>
     </div>
 
+    <!-- МИНИ-ИГРА -->
     <div id="miniGameScreen" class="hidden">
-        <div class="glass-card">
-            <button class="btn btn-secondary" id="gameBackBtn">◀ НАЗАД</button>
-            <div id="miniGameContent" class="mini-game">
-                <h3 style="color:white;">🎲 УГАДАЙ ЧИСЛО</h3>
-                <p style="color:white;">Я загадал число от 1 до 10</p>
-                <input type="number" id="guessInput" class="mini-game-input" placeholder="Твой ответ">
-                <button class="mini-game-btn" id="guessBtn">ПРОВЕРИТЬ</button>
-                <p id="gameResult" style="color:white; margin-top:10px;"></p>
-            </div>
+        <div class="glass-card mini-game" id="miniGameContent">
+            <h2 style="color:white;">🎯 Угадай число</h2>
+            <div id="miniGameQuestion" style="font-size:24px; color:white; margin:16px;">Отгадай число от 1 до 10</div>
+            <input type="number" id="miniGameInput" class="mini-game-input" placeholder="Твой ответ">
+            <button class="mini-game-btn" id="miniGameGuessBtn">Проверить</button>
+            <div id="miniGameResult" style="margin-top:16px; color:white;"></div>
         </div>
+        <button class="btn btn-secondary" id="gameBackBtn">Назад</button>
     </div>
 
-    <div id="shopScreen" class="hidden"><div class="glass-card"><button class="btn btn-secondary" id="shopBackBtn">◀ НАЗАД</button><div class="score-display" style="text-align:center" id="shopScore">⭐ 0</div><div style="display:flex;gap:12px;margin:15px 0"><button class="btn btn-primary" style="flex:1" id="skinsTabBtn">🎭 ПЕРСОНАЖИ</button><button class="btn btn-primary" style="flex:1" id="bgTabBtn">🌍 ФОНЫ</button></div><div id="skinsGrid" class="shop-grid"></div><div id="bgGrid" class="shop-grid hidden"></div></div></div>
-    <div id="profileScreen" class="hidden"><div class="glass-card"><button class="btn btn-secondary" id="profileBackBtn">◀ НАЗАД</button><div class="pet-area"><div class="pet-emoji" id="profilePetEmoji">🐶</div><div class="pet-name" id="profilePetName">Пушистик</div><div class="pet-level" id="profilePetLevel">Уровень 1</div><div class="progress-bar"><div class="progress-fill" id="profilePetProgress" style="width:0%"></div></div></div><div class="stats-row"><span>⭐ Баллов:</span><span id="profileScore">0</span></div><div class="stats-row"><span>✅ Правильных ответов:</span><span id="profileCorrect">0</span></div><div class="stats-row"><span>📊 Попыток:</span><span id="profileAttempts">0</span></div><div class="stats-row"><span>📈 Точность:</span><span id="profileAccuracy">0%</span></div><button class="btn btn-secondary" id="renamePetBtn">🏷️ СМЕНИТЬ ИМЯ</button><button class="btn btn-danger" id="resetStatsBtn">🔄 СБРОСИТЬ СТАТИСТИКУ</button></div></div>
-    <div id="settingsScreen" class="hidden"><div class="glass-card"><button class="btn btn-secondary" id="settingsBackBtn">◀ НАЗАД</button><h2 style="color:white;text-align:center">⚙ НАСТРОЙКИ</h2><div class="settings-option"><span class="settings-label">🎵 Музыка</span><div class="toggle-switch" id="musicToggle"></div></div><div class="settings-option"><span class="settings-label">🔊 Звуки</span><div class="toggle-switch" id="sfxToggle"></div></div><div class="settings-option"><span class="settings-label">📖 Объяснение ошибок</span><div class="toggle-switch" id="explainToggle"></div></div><div class="settings-option"><span class="settings-label">🖼️ Качество</span></div><div class="quality-buttons"><div class="quality-btn" data-quality="low">Низкое</div><div class="quality-btn" data-quality="medium">Среднее</div><div class="quality-btn" data-quality="high">Высокое</div></div><button class="btn btn-danger" id="resetBalanceBtn">💰 ОБНУЛИТЬ БАЛЛЫ</button></div></div>
-
-    <div id="renameDialog" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); display:none; justify-content:center; align-items:center; z-index:1000"><div class="glass-card" style="width:300px"><h3 style="color:white;text-align:center">Имя питомца</h3><input type="text" id="newPetName" style="width:100%; padding:12px; margin:15px 0; border-radius:30px; border:none; background:#2c2c2e; color:white; text-align:center"><button class="btn btn-primary" id="saveNameBtn">СОХРАНИТЬ</button><button class="btn btn-secondary" id="cancelNameBtn">ОТМЕНА</button></div></div>
+    <!-- ДИАЛОГ ПЕРЕИМЕНОВАНИЯ -->
+    <div id="renameDialog" class="rename-dialog">
+        <div class="rename-content">
+            <h3 style="color:white;">Новое имя</h3>
+            <input type="text" id="newPetName" maxlength="20">
+            <button id="saveNameBtn" style="background:#34c759;">Сохранить</button>
+            <button id="cancelNameBtn" style="background:#ff3b30;">Отмена</button>
+        </div>
+    </div>
 </div>
 
 <script>
-    // ==================== ДАННЫЕ ====================
+    // ========== ЗВУКИ И МУЗЫКА ==========
+    let musicEnabled = true;
+    let sfxEnabled = true;
+    let musicVolume = 0.3;
+    let bgMusic = null;
+    
+    // Функция создания простых звуков через Web Audio API
+    function playBeep(frequency = 880, duration = 0.2, type = 'sine') {
+        if (!sfxEnabled) return;
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.frequency.value = frequency;
+            oscillator.type = type;
+            gainNode.gain.value = 0.3;
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + duration);
+            oscillator.stop(audioContext.currentTime + duration);
+            // Не закрываем контекст сразу, чтобы звук мог доиграть
+        } catch(e) { console.log("Audio error:", e); }
+    }
+    
+    function playCorrectSound() { playBeep(880, 0.3, 'sine'); }
+    function playWrongSound() { playBeep(440, 0.4, 'sawtooth'); }
+    function playClickSound() { playBeep(1000, 0.1, 'sine'); }
+    function playBuySound() { playBeep(660, 0.2, 'sine'); setTimeout(() => playBeep(880, 0.2, 'sine'), 100); }
+    function playLevelUpSound() { 
+        playBeep(523, 0.15, 'sine');
+        setTimeout(() => playBeep(659, 0.15, 'sine'), 150);
+        setTimeout(() => playBeep(784, 0.3, 'sine'), 300);
+    }
+    
+    // Фоновая музыка (используем AudioContext для простоты)
+    let musicInterval = null;
+    function startBackgroundMusic() {
+        if (!musicEnabled) return;
+        if (musicInterval) clearInterval(musicInterval);
+        // Простая фоновая музыка - повторяющиеся ноты
+        let notes = [262, 294, 330, 349, 392, 440, 494, 523];
+        let noteIndex = 0;
+        musicInterval = setInterval(() => {
+            if (!musicEnabled) return;
+            playBeep(notes[noteIndex % notes.length], 0.3, 'sine');
+            noteIndex++;
+        }, 800);
+    }
+    
+    function stopBackgroundMusic() {
+        if (musicInterval) {
+            clearInterval(musicInterval);
+            musicInterval = null;
+        }
+    }
+    
+    function setMusicVolume(vol) {
+        musicVolume = Math.max(0, Math.min(1, vol / 100));
+        // Web Audio API громкость на лету менять сложно, перезапустим музыку с новым уровнем
+        if (musicEnabled) {
+            stopBackgroundMusic();
+            startBackgroundMusic();
+        }
+    }
+    
+    function toggleMusic() {
+        musicEnabled = !musicEnabled;
+        if (musicEnabled) {
+            startBackgroundMusic();
+        } else {
+            stopBackgroundMusic();
+        }
+        document.getElementById("musicToggle").classList.toggle("active", musicEnabled);
+    }
+    
+    function toggleSfx() {
+        sfxEnabled = !sfxEnabled;
+        document.getElementById("sfxToggle").classList.toggle("active", sfxEnabled);
+    }
+
+    // ========== ДАННЫЕ ИГРЫ ==========
     let gameData = {
-        score: 0, correctAnswers: 0, totalAttempts: 0,
-        petLevel: 1, petExp: 0, petName: "Пушистик",
-        currentSkin: "🐶 Собака", currentBg: "forest",
+        score: 0,
+        correctAnswers: 0,
+        totalAttempts: 0,
+        petLevel: 1,
+        petExp: 0,
+        petName: "Пушистик",
+        currentSkin: "🐶 Собака",
+        currentBg: "forest",
         clothes: { hat: null, glasses: null, accessory: null },
         room: "basic",
         diary: [],
@@ -240,249 +432,92 @@
         streak: 0
     };
     
-    const skins = {
+    let skins = {
         "🐶 Собака": { emoji: "🐶", price: 0, owned: true },
-        "🐱 Кот": { emoji: "🐱", price: 50, owned: false },
-        "🐦 Птица": { emoji: "🐦", price: 30, owned: false },
-        "🐼 Панда": { emoji: "🐼", price: 100, owned: false },
-        "🦊 Лиса": { emoji: "🦊", price: 80, owned: false },
-        "🐸 Лягушка": { emoji: "🐸", price: 60, owned: false }
+        "🐱 Кот": { emoji: "🐱", price: 100, owned: false },
+        "🐭 Мышь": { emoji: "🐭", price: 150, owned: false },
+        "🐰 Кролик": { emoji: "🐰", price: 200, owned: false }
     };
     
-    const clothes = {
-        "🎩 Шляпа": { emoji: "🎩", price: 20, type: "hat", owned: false },
-        "👓 Очки": { emoji: "👓", price: 15, type: "glasses", owned: false },
-        "🧣 Шарф": { emoji: "🧣", price: 25, type: "accessory", owned: false },
-        "🎀 Бантик": { emoji: "🎀", price: 10, type: "accessory", owned: false },
-        "👑 Корона": { emoji: "👑", price: 50, type: "hat", owned: false },
-        "🕶️ Солнцезащитные": { emoji: "🕶️", price: 30, type: "glasses", owned: false }
+    let clothes = {
+        "Шляпа": { emoji: "👒", type: "hat", price: 80, owned: false },
+        "Очки": { emoji: "👓", type: "glasses", price: 60, owned: false },
+        "Шарф": { emoji: "🧣", type: "accessory", price: 70, owned: false }
     };
     
-    const rooms = {
-        basic: { name: "🏠 Обычная", price: 0, owned: true },
-        space: { name: "🚀 Космос", price: 50, owned: false },
-        forest: { name: "🌲 Лес", price: 40, owned: false },
-        ocean: { name: "🌊 Океан", price: 60, owned: false }
+    let rooms = {
+        "basic": { name: "Обычная", emoji: "🏠", price: 0, owned: true },
+        "forest": { name: "Лесная", emoji: "🌲", price: 150, owned: false },
+        "ocean": { name: "Океан", emoji: "🌊", price: 200, owned: false },
+        "space": { name: "Космос", emoji: "🚀", price: 300, owned: false }
     };
     
-    const backgrounds = {
-        forest: { name: "🌲 Лес", price: 0, owned: true },
-        ocean: { name: "🌊 Океан", price: 30, owned: false },
-        space: { name: "🚀 Космос", price: 50, owned: false }
+    let backgrounds = {
+        "forest": { name: "Лес", price: 0, owned: true },
+        "ocean": { name: "Океан", price: 100, owned: false },
+        "space": { name: "Космос", price: 150, owned: false },
+        "desert": { name: "Пустыня", price: 120, owned: false },
+        "city": { name: "Город", price: 130, owned: false }
     };
-    
-    const diaryMessages = [
-        "😊 Сегодня я хорошо позанимался!",
-        "🍎 Меня покормили, было вкусно!",
-        "🐾 Я сходил на прогулку, свежий воздух!",
-        "🎉 Я получил новый уровень!",
-        "💪 Я решил много примеров!",
-        "🎽 Мне купили новую одежду!",
-        "🏠 Моя комната стала красивее!"
-    ];
     
     let currentDifficulty = "easy";
-    let currentQuestion = null, canAnswer = true, gameActive = false;
-    let musicEnabled = true, sfxEnabled = true, explainEnabled = true;
-    let musicVolume = 0.3;
+    let gameActive = false;
+    let currentQuestion = { text: "", answer: 0 };
+    
+    // ========== ФУНКЦИИ ==========
+    function showLoader(show) {
+        document.getElementById("loader").classList.toggle("active", show);
+    }
+    
+    function saveData() {
+        localStorage.setItem("mathTrainerData", JSON.stringify(gameData));
+        localStorage.setItem("skins", JSON.stringify(skins));
+        localStorage.setItem("backgrounds", JSON.stringify(backgrounds));
+        localStorage.setItem("clothes", JSON.stringify(clothes));
+        localStorage.setItem("rooms", JSON.stringify(rooms));
+    }
+    
+    function loadData() {
+        let saved = localStorage.getItem("mathTrainerData");
+        if (saved) {
+            let data = JSON.parse(saved);
+            gameData = { ...gameData, ...data };
+        }
+        let savedSkins = localStorage.getItem("skins");
+        if (savedSkins) skins = JSON.parse(savedSkins);
+        let savedBg = localStorage.getItem("backgrounds");
+        if (savedBg) backgrounds = JSON.parse(savedBg);
+        let savedClothes = localStorage.getItem("clothes");
+        if (savedClothes) clothes = JSON.parse(savedClothes);
+        let savedRooms = localStorage.getItem("rooms");
+        if (savedRooms) rooms = JSON.parse(savedRooms);
+    }
     
     function addDiaryEntry(message) {
-        const entry = { date: new Date().toLocaleString(), message };
-        gameData.diary.unshift(entry);
+        gameData.diary.unshift({ date: new Date().toLocaleString(), message });
         if (gameData.diary.length > 20) gameData.diary.pop();
         saveData();
     }
     
-    function addPetExp(amount) {
-        let oldLevel = gameData.petLevel;
+    function addExp(amount) {
         gameData.petExp += amount;
-        let need = gameData.petLevel * 10;
+        let need = gameData.petLevel * 100;
         while (gameData.petExp >= need) {
             gameData.petExp -= need;
             gameData.petLevel++;
-            need = gameData.petLevel * 10;
-            addDiaryEntry(`🎉 Ура! Я достиг ${gameData.petLevel} уровня!`);
-            alert(`🎉 ${gameData.petName} достиг ${gameData.petLevel} уровня!`);
+            need = gameData.petLevel * 100;
+            addDiaryEntry(`🎉 Уровень повышен до ${gameData.petLevel}! 🎉`);
+            playLevelUpSound();
         }
-        if (gameData.petLevel > oldLevel) animatePet("happy");
-        updatePetUI();
-        saveData();
-    }
-    
-    function feedPet() {
-        const feedCost = 10;
-        if (gameData.score >= feedCost) {
-            gameData.score -= feedCost;
-            addPetExp(5);
-            animatePet("eat");
-            addDiaryEntry(`🍎 ${gameData.petName} с удовольствием поел! +5 опыта`);
-            saveData();
-            updatePetUI();
-            alert(`🍎 ${gameData.petName} покормлен! +5 опыта`);
-        } else {
-            alert(`❌ Не хватает баллов! Нужно ${feedCost} баллов`);
-        }
-    }
-    
-    function walkPet() {
-        const now = new Date();
-        const lastWalk = gameData.lastWalk ? new Date(gameData.lastWalk) : null;
-        if (lastWalk && (now - lastWalk) < 5 * 60 * 1000) {
-            const minutes = Math.ceil((5 * 60 * 1000 - (now - lastWalk)) / 60000);
-            alert(`❌ Питомец устал! Отдохни ещё ${minutes} минут`);
-            return;
-        }
-        gameData.lastWalk = now.toISOString();
-        addPetExp(3);
-        animatePet("walk");
-        addDiaryEntry(`🐾 ${gameData.petName} сходил на прогулку! +3 опыта`);
         saveData();
         updatePetUI();
-        alert(`🐾 Прогулка завершена! +3 опыта`);
-    }
-    
-    function startMiniGame() {
-        const secretNumber = Math.floor(Math.random() * 10) + 1;
-        document.getElementById("guessBtn").onclick = () => {
-            const guess = parseInt(document.getElementById("guessInput").value);
-            if (isNaN(guess)) {
-                document.getElementById("gameResult").innerText = "❌ Введи число!";
-                return;
-            }
-            if (guess === secretNumber) {
-                document.getElementById("gameResult").innerHTML = "🎉 УГАДАЛ! +10 баллов и +5 опыта!";
-                gameData.score += 10;
-                addPetExp(5);
-                addDiaryEntry(`🎲 Выиграл в мини-игру "Угадай число"! +10 баллов`);
-                saveData();
-                updatePetUI();
-                setTimeout(() => showScreen("petActions"), 1500);
-            } else {
-                document.getElementById("gameResult").innerHTML = `❌ Не угадал! Я загадал ${secretNumber}. Попробуй ещё!`;
-                addDiaryEntry(`🎲 Проиграл в мини-игре, загадано было ${secretNumber}`);
-            }
-            document.getElementById("guessInput").value = "";
-        };
-    }
-    
-    function dressPet() {
-        renderClothesShop();
-        showScreen("dress");
-    }
-    
-    function renderClothesShop() {
-        const grid = document.getElementById("clothesGrid");
-        grid.innerHTML = "";
-        for (let [name, item] of Object.entries(clothes)) {
-            const div = document.createElement("div");
-            div.className = "shop-item";
-            div.innerHTML = `
-                <div class="shop-item-emoji">${item.emoji}</div>
-                <div class="shop-item-name">${name}</div>
-                <div class="shop-item-price">💰 ${item.price}</div>
-                ${item.owned ? '<div style="color:#2ecc71;font-size:0.7rem">✅ Владелец</div>' : ''}
-                ${gameData.clothes[item.type] === name ? '<div style="color:#ff9f43;font-size:0.7rem">🔵 НАДЕТО</div>' : ''}
-            `;
-            if (!item.owned) {
-                div.onclick = () => buyClothes(name);
-            } else if (gameData.clothes[item.type] !== name) {
-                div.onclick = () => equipClothes(name, item.type);
-            }
-            grid.appendChild(div);
-        }
-    }
-    
-    function buyClothes(name) {
-        const item = clothes[name];
-        if (gameData.score >= item.price) {
-            gameData.score -= item.price;
-            item.owned = true;
-            addDiaryEntry(`🎽 Купил(а) ${name} для ${gameData.petName}!`);
-            saveData();
-            renderClothesShop();
-            updatePetUI();
-            alert(`✅ ${name} куплен!`);
-        } else {
-            alert(`❌ Не хватает! Нужно ${item.price} баллов`);
-        }
-    }
-    
-    function equipClothes(name, type) {
-        gameData.clothes[type] = name;
-        addDiaryEntry(`🎽 Надел(а) на ${gameData.petName} ${name}`);
-        saveData();
-        renderClothesShop();
-        updatePetUI();
-        alert(`✅ ${name} надет!`);
-    }
-    
-    function renderRoomShop() {
-        const grid = document.getElementById("roomGrid");
-        grid.innerHTML = "";
-        for (let [id, room] of Object.entries(rooms)) {
-            const div = document.createElement("div");
-            div.className = "shop-item";
-            div.innerHTML = `
-                <div class="shop-item-emoji">${room.name.split(" ")[0]}</div>
-                <div class="shop-item-name">${room.name}</div>
-                <div class="shop-item-price">💰 ${room.price}</div>
-                ${room.owned ? (gameData.room === id ? '<div style="color:#ff9f43;font-size:0.7rem">🔵 АКТИВНА</div>' : '<div style="color:#2ecc71;font-size:0.7rem">✅ Владелец</div>') : ''}
-            `;
-            if (!room.owned) {
-                div.onclick = () => buyRoom(id);
-            } else if (gameData.room !== id) {
-                div.onclick = () => equipRoom(id);
-            }
-            grid.appendChild(div);
-        }
-    }
-    
-    function buyRoom(id) {
-        const room = rooms[id];
-        if (gameData.score >= room.price) {
-            gameData.score -= room.price;
-            room.owned = true;
-            addDiaryEntry(`🏠 Купил(а) комнату ${room.name} для ${gameData.petName}!`);
-            saveData();
-            renderRoomShop();
-            updatePetUI();
-            alert(`✅ Комната ${room.name} куплена!`);
-        } else {
-            alert(`❌ Не хватает! Нужно ${room.price} баллов`);
-        }
-    }
-    
-    function equipRoom(id) {
-        gameData.room = id;
-        addDiaryEntry(`🏠 ${gameData.petName} переехал(а) в комнату ${rooms[id].name}`);
-        saveData();
-        renderRoomShop();
-        updatePetUI();
-        alert(`✅ Комната ${rooms[id].name} активна!`);
-    }
-    
-    function showDiary() {
-        const container = document.getElementById("diaryEntries");
-        container.innerHTML = "";
-        if (gameData.diary.length === 0) {
-            container.innerHTML = '<p style="color:white; text-align:center">📖 Пока нет записей. Играй, чтобы заполнить дневник!</p>';
-        } else {
-            gameData.diary.forEach(entry => {
-                const div = document.createElement("div");
-                div.style.cssText = "background:rgba(0,0,0,0.3); border-radius:20px; padding:10px; margin-bottom:8px;";
-                div.innerHTML = `<div style="color:#aaa; font-size:0.7rem">${entry.date}</div><div style="color:white;">${entry.message}</div>`;
-                container.appendChild(div);
-            });
-        }
-        showScreen("diary");
     }
     
     function updatePetUI() {
-        const need = gameData.petLevel * 10;
-        const percent = (gameData.petExp / need) * 100;
+        let need = gameData.petLevel * 100;
+        let percent = (gameData.petExp / need) * 100;
         let emoji = skins[gameData.currentSkin]?.emoji || "🐶";
         
-        // Добавляем одежду к эмодзи (просто для отображения)
         let clothesStr = "";
         if (gameData.clothes.hat) clothesStr += "👒";
         if (gameData.clothes.glasses) clothesStr += "👓";
@@ -492,139 +527,200 @@
         document.querySelectorAll(".pet-name").forEach(el => el.innerText = gameData.petName);
         document.querySelectorAll(".pet-level").forEach(el => el.innerHTML = `Уровень ${gameData.petLevel} • ${gameData.petExp}/${need} опыта`);
         document.querySelectorAll(".progress-fill").forEach(el => el.style.width = `${percent}%`);
-        document.getElementById("menuScore").innerHTML = `⭐ ${gameData.score} баллов`;
-        if (document.getElementById("gameScore")) document.getElementById("gameScore").innerHTML = `⭐ ${gameData.score}`;
-        if (document.getElementById("shopScore")) document.getElementById("shopScore").innerHTML = `⭐ ${gameData.score} баллов`;
-        if (document.getElementById("profileScore")) {
-            document.getElementById("profileScore").innerText = gameData.score;
-            document.getElementById("profileCorrect").innerText = gameData.correctAnswers;
-            document.getElementById("profileAttempts").innerText = gameData.totalAttempts;
-            let acc = gameData.totalAttempts > 0 ? ((gameData.correctAnswers / gameData.totalAttempts) * 100).toFixed(1) : 0;
-            document.getElementById("profileAccuracy").innerText = `${acc}%`;
-        }
+        document.querySelectorAll(".score-display span, #shopScore, #dressScore, #roomScore").forEach(el => {
+            if (el.id !== "totalScore") el.innerText = gameData.score;
+        });
+        document.getElementById("totalScore").innerText = gameData.score;
+        document.getElementById("correctCount").innerText = gameData.correctAnswers;
+        let acc = gameData.totalAttempts > 0 ? ((gameData.correctAnswers / gameData.totalAttempts) * 100).toFixed(1) : 0;
+        document.getElementById("profileAccuracy").innerText = acc;
         if (document.getElementById("gamePet")) document.getElementById("gamePet").innerHTML = `${clothesStr + emoji} Lv.${gameData.petLevel}`;
     }
     
     function animatePet(anim) {
-        let pe = document.querySelector(".pet-emoji");
-        if (!pe) return;
-        pe.classList.remove("pet-animation-happy", "pet-animation-sad", "pet-animation-eat", "pet-animation-walk");
-        void pe.offsetWidth;
-        pe.classList.add(`pet-animation-${anim}`);
-        setTimeout(() => pe.classList.remove(`pet-animation-${anim}`), 500);
-    }
-    
-    function applyTheme() { document.body.className = `theme-${gameData.currentBg}`; }
-    
-    function generateQuestion() {
-        if (currentDifficulty === "hard") {
-            let a = Math.floor(Math.random() * 8) + 2, b = Math.floor(Math.random() * 9) + 1;
-            return { text: `${a} × ${b}`, answer: a * b };
-        }
-        let maxAns = currentDifficulty === "easy" ? 50 : 100;
-        for (let t = 0; t < 30; t++) {
-            if (Math.random() < 0.5) {
-                let a = Math.floor(Math.random() * maxAns) + 1, b = Math.floor(Math.random() * (maxAns - a)) + 1;
-                if (a + b <= maxAns) return { text: `${a} + ${b}`, answer: a + b };
-            } else {
-                let a = Math.floor(Math.random() * maxAns) + 1, b = Math.floor(Math.random() * a) + 1;
-                if (a - b >= 0) return { text: `${a} - ${b}`, answer: a - b };
-            }
-        }
-        return { text: "10 + 5", answer: 15 };
-    }
-    
-    function newQuestion() {
-        if (!gameActive) return;
-        canAnswer = true;
-        currentQuestion = generateQuestion();
-        document.getElementById("question").innerText = currentQuestion.text;
-        document.getElementById("answerInput").value = "";
-        document.getElementById("status").innerHTML = "";
-        document.getElementById("checkBtn").disabled = false;
-        document.getElementById("answerInput").disabled = false;
-        document.getElementById("answerInput").focus();
-    }
-    
-    function checkAnswer() {
-        if (!gameActive || !canAnswer) return;
-        let user = parseInt(document.getElementById("answerInput").value);
-        if (isNaN(user)) {
-            document.getElementById("status").innerHTML = "❌ Введи число!";
-            document.getElementById("status").className = "status wrong";
-            return;
-        }
-        let points = currentDifficulty === "easy" ? 1 : (currentDifficulty === "medium" ? 2 : 0.5);
-        canAnswer = false;
-        document.getElementById("checkBtn").disabled = true;
-        document.getElementById("answerInput").disabled = true;
-        if (user === currentQuestion.answer) {
-            gameData.score += points;
-            gameData.correctAnswers++;
-            gameData.totalAttempts++;
-            addPetExp(1);
-            saveData();
-            animatePet("happy");
-            document.getElementById("status").innerHTML = `✅ ПРАВИЛЬНО! +${points} балл(а)`;
-            document.getElementById("status").className = "status correct";
-            updatePetUI();
-            setTimeout(() => { if (gameActive) newQuestion(); }, 700);
-        } else {
-            gameData.totalAttempts++;
-            saveData();
-            animatePet("sad");
-            document.getElementById("status").innerHTML = `❌ НЕПРАВИЛЬНО! Ответ: ${currentQuestion.answer}`;
-            document.getElementById("status").className = "status wrong";
-            updatePetUI();
-            setTimeout(() => { if (gameActive) newQuestion(); }, 1500);
+        let pet = document.querySelector(".pet-emoji");
+        if (pet) {
+            pet.classList.remove("pet-animation-happy", "pet-animation-sad", "pet-animation-eat", "pet-animation-walk");
+            void pet.offsetWidth;
+            pet.classList.add(`pet-animation-${anim}`);
+            setTimeout(() => pet.classList.remove(`pet-animation-${anim}`), 500);
         }
     }
     
-    function loadData() {
-        let s = localStorage.getItem("mathTrainerDataPro");
-        if (s) {
-            try {
-                let d = JSON.parse(s);
-                gameData = { ...gameData, ...d };
-                if (d.ownedSkins) for (let sk in skins) if (d.ownedSkins[sk]) skins[sk].owned = true;
-                if (d.ownedClothes) for (let cl in clothes) if (d.ownedClothes[cl]) clothes[cl].owned = true;
-                if (d.ownedRooms) for (let rm in rooms) if (d.ownedRooms[rm]) rooms[rm].owned = true;
-                if (d.ownedBgs) for (let bg in backgrounds) if (d.ownedBgs[bg]) backgrounds[bg].owned = true;
-            } catch(e) {}
-        }
+    function applyTheme() {
+        document.body.classList.remove("theme-forest", "theme-ocean", "theme-space", "theme-desert", "theme-city");
+        document.body.classList.add(`theme-${gameData.currentBg}`);
+    }
+    
+    function feedPet() {
+        addExp(10);
+        addDiaryEntry(`🍖 ${gameData.petName} поел и получил +10 опыта!`);
+        animatePet("eat");
+        playClickSound();
         updatePetUI();
     }
     
-    function saveData() {
-        let toSave = {
-            ...gameData,
-            ownedSkins: {}, ownedClothes: {}, ownedRooms: {}, ownedBgs: {}
-        };
-        for (let s in skins) if (skins[s].owned && skins[s].price > 0) toSave.ownedSkins[s] = true;
-        for (let c in clothes) if (clothes[c].owned && clothes[c].price > 0) toSave.ownedClothes[c] = true;
-        for (let r in rooms) if (rooms[r].owned && rooms[r].price > 0) toSave.ownedRooms[r] = true;
-        for (let b in backgrounds) if (backgrounds[b].owned && backgrounds[b].price > 0) toSave.ownedBgs[b] = true;
-        localStorage.setItem("mathTrainerDataPro", JSON.stringify(toSave));
+    function walkPet() {
+        let now = Date.now();
+        if (gameData.lastWalk && now - gameData.lastWalk < 3600000) {
+            alert("Питомец устал! Подожди час.");
+            return;
+        }
+        addExp(15);
+        gameData.lastWalk = now;
+        addDiaryEntry(`🚶 ${gameData.petName} сходил на прогулку и получил +15 опыта!`);
+        animatePet("walk");
+        playClickSound();
+        updatePetUI();
+    }
+    
+    function dressPet() { showScreen("dress"); }
+    
+    function newQuestion() {
+        let maxNum = currentDifficulty === "easy" ? 10 : currentDifficulty === "medium" ? 50 : 100;
+        let a = Math.floor(Math.random() * maxNum) + 1;
+        let b = Math.floor(Math.random() * maxNum) + 1;
+        let op = Math.random() > 0.5 ? "+" : "-";
+        if (op === "-" && a < b) [a, b] = [b, a];
+        currentQuestion = { text: `${a} ${op} ${b}`, answer: op === "+" ? a + b : a - b };
+        document.getElementById("question").innerText = currentQuestion.text;
+        document.getElementById("answerInput").value = "";
+        document.getElementById("gameStatus").innerHTML = "";
+    }
+    
+    function checkAnswer() {
+        if (!gameActive) return;
+        let userAnswer = parseInt(document.getElementById("answerInput").value);
+        if (isNaN(userAnswer)) {
+            document.getElementById("gameStatus").innerHTML = "<span class='wrong'>Введи число!</span>";
+            return;
+        }
+        gameData.totalAttempts++;
+        if (userAnswer === currentQuestion.answer) {
+            let points = currentDifficulty === "easy" ? 10 : currentDifficulty === "medium" ? 20 : 35;
+            gameData.score += points;
+            gameData.correctAnswers++;
+            document.getElementById("gameStatus").innerHTML = `<span class='correct'>✅ +${points} баллов!</span>`;
+            addExp(5);
+            addDiaryEntry(`🎯 Решено: ${currentQuestion.text} = ${currentQuestion.answer} (+${points}⭐)`);
+            playCorrectSound();
+            animatePet("happy");
+        } else {
+            document.getElementById("gameStatus").innerHTML = `<span class='wrong'>❌ Правильно: ${currentQuestion.answer}</span>`;
+            playWrongSound();
+            animatePet("sad");
+        }
+        saveData();
+        updatePetUI();
+        newQuestion();
+    }
+    
+    function buyItem(item, type, price, key) {
+        if (gameData.score >= price) {
+            gameData.score -= price;
+            if (type === "skin") skins[key].owned = true;
+            else if (type === "bg") backgrounds[key].owned = true;
+            else if (type === "clothes") clothes[key].owned = true;
+            else if (type === "room") rooms[key].owned = true;
+            saveData();
+            updatePetUI();
+            renderShop();
+            renderClothesShop();
+            renderRoomShop();
+            playBuySound();
+            addDiaryEntry(`🛒 Куплено: ${item} за ${price}⭐`);
+        } else {
+            alert("Не хватает баллов!");
+        }
     }
     
     function renderShop() {
-        document.getElementById("shopScore").innerHTML = `⭐ ${gameData.score} баллов`;
-        let skinsGrid = document.getElementById("skinsGrid"), bgGrid = document.getElementById("bgGrid");
-        skinsGrid.innerHTML = "";
+        let skinsHtml = "";
         for (let [name, skin] of Object.entries(skins)) {
-            let d = document.createElement("div"); d.className = "shop-item";
-            d.innerHTML = `<div class="shop-item-emoji">${skin.emoji}</div><div class="shop-item-name">${name}</div><div class="shop-item-price">💰 ${skin.price}</div>${skin.owned ? (gameData.currentSkin === name ? '<div style="color:#ff9f43">✅ НАДЕТО</div>' : '<div style="color:#2ecc71">✅ Владелец</div>') : ''}`;
-            if (!skin.owned) d.onclick = () => { if (gameData.score >= skin.price) { gameData.score -= skin.price; skin.owned = true; saveData(); renderShop(); updatePetUI(); } else alert(`Не хватает!`); };
-            else if (gameData.currentSkin !== name) d.onclick = () => { gameData.currentSkin = name; saveData(); renderShop(); updatePetUI(); };
-            skinsGrid.appendChild(d);
+            skinsHtml += `<div class="shop-item" onclick="buyItem('${name}', 'skin', ${skin.price}, '${name}')">
+                <div class="shop-item-emoji">${skin.emoji}</div>
+                <div class="shop-item-name">${name}${skin.owned ? " ✓" : ""}</div>
+                <div class="shop-item-price">${skin.price}⭐</div>
+            </div>`;
         }
-        bgGrid.innerHTML = "";
+        document.getElementById("skinsGrid").innerHTML = skinsHtml;
+        
+        let bgHtml = "";
         for (let [id, bg] of Object.entries(backgrounds)) {
-            let d = document.createElement("div"); d.className = "shop-item";
-            d.innerHTML = `<div class="shop-item-emoji">${bg.name.split(" ")[0]}</div><div class="shop-item-name">${bg.name}</div><div class="shop-item-price">💰 ${bg.price}</div>${bg.owned ? (gameData.currentBg === id ? '<div style="color:#ff9f43">🔵 АКТИВЕН</div>' : '<div style="color:#2ecc71">✅ Владелец</div>') : ''}`;
-            if (!bg.owned) d.onclick = () => { if (gameData.score >= bg.price) { gameData.score -= bg.price; bg.owned = true; saveData(); renderShop(); applyTheme(); updatePetUI(); } else alert(`Не хватает!`); };
-            else if (gameData.currentBg !== id) d.onclick = () => { gameData.currentBg = id; applyTheme(); saveData(); renderShop(); updatePetUI(); };
-            bgGrid.appendChild(d);
+            bgHtml += `<div class="shop-item" onclick="if(gameData.score>=${bg.price}){gameData.score-=${bg.price}; backgrounds['${id}'].owned=true; gameData.currentBg='${id}'; saveData(); applyTheme(); updatePetUI(); renderShop(); playBuySound();}else{alert('Не хватает баллов!');}">
+                <div class="shop-item-emoji">${id === "forest" ? "🌲" : id === "ocean" ? "🌊" : id === "space" ? "🚀" : id === "desert" ? "🏜️" : "🏙️"}</div>
+                <div class="shop-item-name">${bg.name}${bg.owned ? " ✓" : ""} ${gameData.currentBg === id ? " (активен)" : ""}</div>
+                <div class="shop-item-price">${bg.price}⭐</div>
+            </div>`;
+        }
+        document.getElementById("bgGrid").innerHTML = bgHtml;
+    }
+    
+    function renderClothesShop() {
+        let html = "";
+        for (let [name, item] of Object.entries(clothes)) {
+            let isEquipped = gameData.clothes[item.type] === name;
+            html += `<div class="shop-item" onclick="if(!${item.owned}){if(gameData.score>=${item.price}){gameData.score-=${item.price}; clothes['${name}'].owned=true; saveData(); updatePetUI(); renderClothesShop(); playBuySound();}else{alert('Не хватает баллов!');}}else{if('${isEquipped}'){gameData.clothes['${item.type}']=null;}else{gameData.clothes['${item.type}']='${name}';} saveData(); updatePetUI(); renderClothesShop(); playClickSound();}">
+                <div class="shop-item-emoji">${item.emoji}</div>
+                <div class="shop-item-name">${name}${item.owned ? (isEquipped ? " ✓ надето" : " (в инвентаре)") : ""}</div>
+                <div class="shop-item-price">${item.owned ? "Нажми чтобы надеть" : item.price + "⭐"}</div>
+            </div>`;
+        }
+        document.getElementById("clothesShopGrid").innerHTML = html;
+        document.getElementById("dressScore").innerText = gameData.score;
+    }
+    
+    function renderRoomShop() {
+        let html = "";
+        for (let [id, room] of Object.entries(rooms)) {
+            let isActive = gameData.room === id;
+            html += `<div class="shop-item" onclick="if(!${room.owned}){if(gameData.score>=${room.price}){gameData.score-=${room.price}; rooms['${id}'].owned=true; saveData(); updatePetUI(); renderRoomShop(); playBuySound();}else{alert('Не хватает баллов!');}}else{gameData.room='${id}'; saveData(); updatePetUI(); renderRoomShop(); playClickSound();}">
+                <div class="shop-item-emoji">${room.emoji}</div>
+                <div class="shop-item-name">${room.name}${room.owned ? (isActive ? " ✓ активна" : "") : ""}</div>
+                <div class="shop-item-price">${room.owned ? "Нажми чтобы выбрать" : room.price + "⭐"}</div>
+            </div>`;
+        }
+        document.getElementById("roomGrid").innerHTML = html;
+        document.getElementById("roomScore").innerText = gameData.score;
+    }
+    
+    function showDiary() {
+        let diaryDiv = document.getElementById("diaryList");
+        if (gameData.diary.length === 0) {
+            diaryDiv.innerHTML = "<div style='color:white; text-align:center;'>Пока нет записей</div>";
+        } else {
+            diaryDiv.innerHTML = gameData.diary.map(e => `<div style='color:white; padding:8px; border-bottom:1px solid rgba(255,255,255,0.1);'><small>${e.date}</small><br>${e.message}</div>`).join("");
+        }
+        showScreen("diary");
+    }
+    
+    let miniGameNumber = 0;
+    function startMiniGame() {
+        miniGameNumber = Math.floor(Math.random() * 10) + 1;
+        document.getElementById("miniGameQuestion").innerHTML = "Отгадай число от 1 до 10!";
+        document.getElementById("miniGameInput").value = "";
+        document.getElementById("miniGameResult").innerHTML = "";
+    }
+    
+    function checkMiniGame() {
+        let guess = parseInt(document.getElementById("miniGameInput").value);
+        if (isNaN(guess)) {
+            document.getElementById("miniGameResult").innerHTML = "<span class='wrong'>Введи число!</span>";
+            return;
+        }
+        if (guess === miniGameNumber) {
+            let reward = 30;
+            gameData.score += reward;
+            saveData();
+            updatePetUI();
+            document.getElementById("miniGameResult").innerHTML = `<span class='correct'>🎉 Угадал! +${reward}⭐</span>`;
+            addDiaryEntry(`🎮 Выиграл в мини-игре! +${reward}⭐`);
+            playCorrectSound();
+            setTimeout(() => showScreen("petActions"), 1500);
+        } else {
+            document.getElementById("miniGameResult").innerHTML = `<span class='wrong'>❌ Не угадал! Было число ${miniGameNumber}</span>`;
+            playWrongSound();
+            setTimeout(() => startMiniGame(), 2000);
         }
     }
     
@@ -640,6 +736,7 @@
         document.getElementById("roomScreen").classList.add("hidden");
         document.getElementById("diaryScreen").classList.add("hidden");
         document.getElementById("miniGameScreen").classList.add("hidden");
+        
         if (screen === "menu") document.getElementById("menuScreen").classList.remove("hidden");
         if (screen === "difficulty") document.getElementById("difficultyScreen").classList.remove("hidden");
         if (screen === "game") { document.getElementById("gameScreen").classList.remove("hidden"); gameActive = true; newQuestion(); }
@@ -649,14 +746,27 @@
         if (screen === "petActions") document.getElementById("petActionsScreen").classList.remove("hidden");
         if (screen === "dress") { document.getElementById("dressScreen").classList.remove("hidden"); renderClothesShop(); }
         if (screen === "room") { document.getElementById("roomScreen").classList.remove("hidden"); renderRoomShop(); }
-        if (screen === "diary") showDiary();
+        if (screen === "diary") { document.getElementById("diaryScreen").classList.remove("hidden"); }
         if (screen === "miniGame") { document.getElementById("miniGameScreen").classList.remove("hidden"); startMiniGame(); }
     }
     
-    function startGame(diff) { currentDifficulty = diff; gameActive = true; showScreen("game"); }
+    function startGame(diff) {
+        currentDifficulty = diff;
+        gameActive = true;
+        showScreen("game");
+    }
     
-    loadData(); applyTheme(); updatePetUI();
+    // ========== ИНИЦИАЛИЗАЦИЯ ==========
+    loadData();
+    applyTheme();
+    updatePetUI();
     
+    // Настройки
+    document.getElementById("musicToggle").classList.toggle("active", musicEnabled);
+    document.getElementById("sfxToggle").classList.toggle("active", sfxEnabled);
+    document.getElementById("musicVolume").value = musicVolume * 100;
+    
+    // Кнопки
     document.getElementById("playBtn").onclick = () => showScreen("difficulty");
     document.getElementById("shopBtn").onclick = () => showScreen("shop");
     document.getElementById("profileBtn").onclick = () => showScreen("profile");
@@ -682,14 +792,24 @@
     document.getElementById("roomBtn").onclick = () => { renderRoomShop(); showScreen("room"); };
     document.getElementById("diaryBtn").onclick = showDiary;
     document.getElementById("miniGameBtn").onclick = () => showScreen("miniGame");
+    document.getElementById("miniGameGuessBtn").onclick = checkMiniGame;
     document.getElementById("answerInput").addEventListener("keypress", (e) => { if (e.key === "Enter") checkAnswer(); });
     document.getElementById("skinsTabBtn").onclick = () => { document.getElementById("skinsGrid").classList.remove("hidden"); document.getElementById("bgGrid").classList.add("hidden"); };
     document.getElementById("bgTabBtn").onclick = () => { document.getElementById("skinsGrid").classList.add("hidden"); document.getElementById("bgGrid").classList.remove("hidden"); };
     document.getElementById("renamePetBtn").onclick = () => { document.getElementById("newPetName").value = gameData.petName; document.getElementById("renameDialog").style.display = "flex"; };
-    document.getElementById("saveNameBtn").onclick = () => { let nn = document.getElementById("newPetName").value.trim(); if (nn) { gameData.petName = nn; saveData(); updatePetUI(); addDiaryEntry(`📝 ${gameData.petName} получил новое имя!`); } document.getElementById("renameDialog").style.display = "none"; };
+    document.getElementById("saveNameBtn").onclick = () => { let nn = document.getElementById("newPetName").value.trim(); if (nn) { gameData.petName = nn; saveData(); updatePetUI(); addDiaryEntry(`📝 ${gameData.petName} получил новое имя!`); playClickSound(); } document.getElementById("renameDialog").style.display = "none"; };
     document.getElementById("cancelNameBtn").onclick = () => document.getElementById("renameDialog").style.display = "none";
-    document.getElementById("resetStatsBtn").onclick = () => { if (confirm("Сбросить всё?")) { gameData = { score:0, correctAnswers:0, totalAttempts:0, petLevel:1, petExp:0, petName:"Пушистик", currentSkin:"🐶 Собака", currentBg:"forest", clothes:{ hat:null, glasses:null, accessory:null }, room:"basic", diary:[], lastWalk:null, lastDailyBonus:null, streak:0 }; for(let s in skins) skins[s].owned = (s==="🐶 Собака"); for(let c in clothes) clothes[c].owned = false; for(let r in rooms) rooms[r].owned = (r==="basic"); for(let b in backgrounds) backgrounds[b].owned = (b==="forest"); saveData(); applyTheme(); updatePetUI(); showScreen("menu"); } };
-    document.getElementById("resetBalanceBtn").onclick = () => { if (confirm("Обнулить баллы?")) { gameData.score = 0; saveData(); updatePetUI(); alert("Баллы обнулены!"); } };
+    document.getElementById("resetStatsBtn").onclick = () => { if (confirm("Сбросить всё?")) { gameData = { score:0, correctAnswers:0, totalAttempts:0, petLevel:1, petExp:0, petName:"Пушистик", currentSkin:"🐶 Собака", currentBg:"forest", clothes:{ hat:null, glasses:null, accessory:null }, room:"basic", diary:[], lastWalk:null, lastDailyBonus:null, streak:0 }; for(let s in skins) skins[s].owned = (s==="🐶 Собака"); for(let c in clothes) clothes[c].owned = false; for(let r in rooms) rooms[r].owned = (r==="basic"); for(let b in backgrounds) backgrounds[b].owned = (b==="forest"); saveData(); applyTheme(); updatePetUI(); showScreen("menu"); playClickSound(); } };
+    document.getElementById("resetBalanceBtn").onclick = () => { if (confirm("Обнулить баллы?")) { gameData.score = 0; saveData(); updatePetUI(); alert("Баллы обнулены!"); playClickSound(); } };
+    
+    document.getElementById("musicToggle").onclick = toggleMusic;
+    document.getElementById("sfxToggle").onclick = toggleSfx;
+    document.getElementById("musicVolume").oninput = (e) => setMusicVolume(e.target.value);
+    
+    // Запускаем фоновую музыку после первого взаимодействия с пользователем
+    document.body.addEventListener("click", () => {
+        if (musicEnabled && !musicInterval) startBackgroundMusic();
+    }, { once: true });
 </script>
 </body>
 </html>
