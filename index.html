@@ -268,6 +268,13 @@
                 <span class="settings-label">📢 Громкость музыки</span>
                 <input type="range" min="0" max="100" value="30" class="volume-slider" id="musicVolume">
             </div>
+            <div class="settings-option">
+                <button class="btn btn-danger" id="resetStatsBtn" style="margin:0;">🔄 Сбросить всё</button>
+                <button class="btn btn-secondary" id="resetBalanceBtn" style="margin:0;">💰 Обнулить баллы</button>
+            </div>
+            <div class="settings-option">
+                <button class="btn" id="renamePetBtn">✏️ Переименовать питомца</button>
+            </div>
         </div>
         <button class="btn btn-secondary" id="settingsBackBtn">Назад</button>
     </div>
@@ -333,483 +340,617 @@
 </div>
 
 <script>
-    // ========== ЗВУКИ И МУЗЫКА ==========
-    let musicEnabled = true;
-    let sfxEnabled = true;
-    let musicVolume = 0.3;
-    let bgMusic = null;
-    
-    // Функция создания простых звуков через Web Audio API
-    function playBeep(frequency = 880, duration = 0.2, type = 'sine') {
-        if (!sfxEnabled) return;
-        try {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            oscillator.frequency.value = frequency;
-            oscillator.type = type;
-            gainNode.gain.value = 0.3;
-            oscillator.start();
-            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + duration);
-            oscillator.stop(audioContext.currentTime + duration);
-            // Не закрываем контекст сразу, чтобы звук мог доиграть
-        } catch(e) { console.log("Audio error:", e); }
-    }
-    
-    function playCorrectSound() { playBeep(880, 0.3, 'sine'); }
-    function playWrongSound() { playBeep(440, 0.4, 'sawtooth'); }
-    function playClickSound() { playBeep(1000, 0.1, 'sine'); }
-    function playBuySound() { playBeep(660, 0.2, 'sine'); setTimeout(() => playBeep(880, 0.2, 'sine'), 100); }
-    function playLevelUpSound() { 
-        playBeep(523, 0.15, 'sine');
-        setTimeout(() => playBeep(659, 0.15, 'sine'), 150);
-        setTimeout(() => playBeep(784, 0.3, 'sine'), 300);
-    }
-    
-    // Фоновая музыка (используем AudioContext для простоты)
-    let musicInterval = null;
-    function startBackgroundMusic() {
-        if (!musicEnabled) return;
-        if (musicInterval) clearInterval(musicInterval);
-        // Простая фоновая музыка - повторяющиеся ноты
-        let notes = [262, 294, 330, 349, 392, 440, 494, 523];
-        let noteIndex = 0;
-        musicInterval = setInterval(() => {
-            if (!musicEnabled) return;
-            playBeep(notes[noteIndex % notes.length], 0.3, 'sine');
-            noteIndex++;
-        }, 800);
-    }
-    
-    function stopBackgroundMusic() {
-        if (musicInterval) {
-            clearInterval(musicInterval);
-            musicInterval = null;
-        }
-    }
-    
-    function setMusicVolume(vol) {
-        musicVolume = Math.max(0, Math.min(1, vol / 100));
-        // Web Audio API громкость на лету менять сложно, перезапустим музыку с новым уровнем
-        if (musicEnabled) {
-            stopBackgroundMusic();
-            startBackgroundMusic();
-        }
-    }
-    
-    function toggleMusic() {
-        musicEnabled = !musicEnabled;
-        if (musicEnabled) {
-            startBackgroundMusic();
-        } else {
-            stopBackgroundMusic();
-        }
-        document.getElementById("musicToggle").classList.toggle("active", musicEnabled);
-    }
-    
-    function toggleSfx() {
-        sfxEnabled = !sfxEnabled;
-        document.getElementById("sfxToggle").classList.toggle("active", sfxEnabled);
-    }
+// ========== ЗВУКИ И МУЗЫКА ИЗ ФАЙЛОВ GITHUB (РАБОТАЕТ!) ==========
+let musicEnabled = true;
+let sfxEnabled = true;
+let musicVolume = 0.3;
 
-    // ========== ДАННЫЕ ИГРЫ ==========
-    let gameData = {
-        score: 0,
-        correctAnswers: 0,
-        totalAttempts: 0,
-        petLevel: 1,
-        petExp: 0,
-        petName: "Пушистик",
-        currentSkin: "🐶 Собака",
-        currentBg: "forest",
-        clothes: { hat: null, glasses: null, accessory: null },
-        room: "basic",
-        diary: [],
-        lastWalk: null,
-        lastDailyBonus: null,
-        streak: 0
-    };
-    
-    let skins = {
-        "🐶 Собака": { emoji: "🐶", price: 0, owned: true },
-        "🐱 Кот": { emoji: "🐱", price: 100, owned: false },
-        "🐭 Мышь": { emoji: "🐭", price: 150, owned: false },
-        "🐰 Кролик": { emoji: "🐰", price: 200, owned: false }
-    };
-    
-    let clothes = {
-        "Шляпа": { emoji: "👒", type: "hat", price: 80, owned: false },
-        "Очки": { emoji: "👓", type: "glasses", price: 60, owned: false },
-        "Шарф": { emoji: "🧣", type: "accessory", price: 70, owned: false }
-    };
-    
-    let rooms = {
-        "basic": { name: "Обычная", emoji: "🏠", price: 0, owned: true },
-        "forest": { name: "Лесная", emoji: "🌲", price: 150, owned: false },
-        "ocean": { name: "Океан", emoji: "🌊", price: 200, owned: false },
-        "space": { name: "Космос", emoji: "🚀", price: 300, owned: false }
-    };
-    
-    let backgrounds = {
-        "forest": { name: "Лес", price: 0, owned: true },
-        "ocean": { name: "Океан", price: 100, owned: false },
-        "space": { name: "Космос", price: 150, owned: false },
-        "desert": { name: "Пустыня", price: 120, owned: false },
-        "city": { name: "Город", price: 130, owned: false }
-    };
-    
-    let currentDifficulty = "easy";
-    let gameActive = false;
-    let currentQuestion = { text: "", answer: 0 };
-    
-    // ========== ФУНКЦИИ ==========
-    function showLoader(show) {
-        document.getElementById("loader").classList.toggle("active", show);
+// ПРЯМЫЕ RAW-ССЫЛКИ НА ВАШИ ФАЙЛЫ
+const SOUND_CORRECT_URL = 'https://raw.githubusercontent.com/TaizerVip/Taizervip.github.io/726a3c31bbac801524758ca2cb3002ebe690e6c1/193921.mp3';
+const SOUND_WRONG_URL = 'https://raw.githubusercontent.com/TaizerVip/Taizervip.github.io/726a3c31bbac801524758ca2cb3002ebe690e6c1/011fb0a5-8658-4a7f-a9c1-25ec2e3f4320.mp3';
+const MUSIC_BG_URL = 'https://raw.githubusercontent.com/TaizerVip/Taizervip.github.io/726a3c31bbac801524758ca2cb3002ebe690e6c1/69880c1f5e57698.mp3';
+
+// Создаём аудио объекты
+const soundCorrect = new Audio(SOUND_CORRECT_URL);
+const soundWrong = new Audio(SOUND_WRONG_URL);
+const bgMusicAudio = new Audio(MUSIC_BG_URL);
+
+// Настройка фоновой музыки
+bgMusicAudio.loop = true;
+bgMusicAudio.volume = musicVolume;
+
+// Функции воспроизведения звуков
+function playCorrectSound() {
+    if (!sfxEnabled) return;
+    soundCorrect.currentTime = 0;
+    soundCorrect.play().catch(e => console.log("Audio play error:", e));
+}
+
+function playWrongSound() {
+    if (!sfxEnabled) return;
+    soundWrong.currentTime = 0;
+    soundWrong.play().catch(e => console.log("Audio play error:", e));
+}
+
+function playClickSound() {
+    if (!sfxEnabled) return;
+    // Используем короткий звук правильного ответа как клик
+    soundCorrect.currentTime = 0;
+    soundCorrect.play().catch(e => console.log("Audio play error:", e));
+}
+
+function playBuySound() {
+    playCorrectSound(); // Звук покупки
+}
+
+function playLevelUpSound() {
+    playCorrectSound(); // Звук повышения уровня
+}
+
+function startBackgroundMusic() {
+    if (!musicEnabled) return;
+    bgMusicAudio.play().catch(e => console.log("Music play error (autoplay blocked):", e));
+}
+
+function stopBackgroundMusic() {
+    bgMusicAudio.pause();
+    bgMusicAudio.currentTime = 0;
+}
+
+function setMusicVolume(vol) {
+    musicVolume = Math.max(0, Math.min(1, vol / 100));
+    bgMusicAudio.volume = musicVolume;
+}
+
+function toggleMusic() {
+    musicEnabled = !musicEnabled;
+    if (musicEnabled) {
+        startBackgroundMusic();
+    } else {
+        stopBackgroundMusic();
     }
-    
-    function saveData() {
-        localStorage.setItem("mathTrainerData", JSON.stringify(gameData));
-        localStorage.setItem("skins", JSON.stringify(skins));
-        localStorage.setItem("backgrounds", JSON.stringify(backgrounds));
-        localStorage.setItem("clothes", JSON.stringify(clothes));
-        localStorage.setItem("rooms", JSON.stringify(rooms));
+    const musicToggle = document.getElementById("musicToggle");
+    if (musicToggle) musicToggle.classList.toggle("active", musicEnabled);
+}
+
+function toggleSfx() {
+    sfxEnabled = !sfxEnabled;
+    const sfxToggle = document.getElementById("sfxToggle");
+    if (sfxToggle) sfxToggle.classList.toggle("active", sfxEnabled);
+}
+
+// ========== ДАННЫЕ ИГРЫ ==========
+let gameData = {
+    score: 0,
+    correctAnswers: 0,
+    totalAttempts: 0,
+    petLevel: 1,
+    petExp: 0,
+    petName: "Пушистик",
+    currentSkin: "🐶 Собака",
+    currentBg: "forest",
+    clothes: { hat: null, glasses: null, accessory: null },
+    room: "basic",
+    diary: [],
+    lastWalk: null,
+    lastDailyBonus: null,
+    streak: 0
+};
+
+let skins = {
+    "🐶 Собака": { emoji: "🐶", price: 0, owned: true },
+    "🐱 Кот": { emoji: "🐱", price: 100, owned: false },
+    "🐭 Мышь": { emoji: "🐭", price: 150, owned: false },
+    "🐰 Кролик": { emoji: "🐰", price: 200, owned: false }
+};
+
+let clothes = {
+    "Шляпа": { emoji: "👒", type: "hat", price: 80, owned: false },
+    "Очки": { emoji: "👓", type: "glasses", price: 60, owned: false },
+    "Шарф": { emoji: "🧣", type: "accessory", price: 70, owned: false }
+};
+
+let rooms = {
+    "basic": { name: "Обычная", emoji: "🏠", price: 0, owned: true },
+    "forest": { name: "Лесная", emoji: "🌲", price: 150, owned: false },
+    "ocean": { name: "Океан", emoji: "🌊", price: 200, owned: false },
+    "space": { name: "Космос", emoji: "🚀", price: 300, owned: false }
+};
+
+let backgrounds = {
+    "forest": { name: "Лес", price: 0, owned: true },
+    "ocean": { name: "Океан", price: 100, owned: false },
+    "space": { name: "Космос", price: 150, owned: false },
+    "desert": { name: "Пустыня", price: 120, owned: false },
+    "city": { name: "Город", price: 130, owned: false }
+};
+
+let currentDifficulty = "easy";
+let gameActive = false;
+let currentQuestion = { text: "", answer: 0 };
+let miniGameNumber = 0;
+
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+function showLoader(show) {
+    const loader = document.getElementById("loader");
+    if (show) loader.classList.add("active");
+    else loader.classList.remove("active");
+}
+
+function saveData() {
+    localStorage.setItem("mathTrainerData", JSON.stringify(gameData));
+    localStorage.setItem("skins", JSON.stringify(skins));
+    localStorage.setItem("backgrounds", JSON.stringify(backgrounds));
+    localStorage.setItem("clothes", JSON.stringify(clothes));
+    localStorage.setItem("rooms", JSON.stringify(rooms));
+}
+
+function loadData() {
+    let saved = localStorage.getItem("mathTrainerData");
+    if (saved) {
+        let data = JSON.parse(saved);
+        gameData = { ...gameData, ...data };
     }
-    
-    function loadData() {
-        let saved = localStorage.getItem("mathTrainerData");
-        if (saved) {
-            let data = JSON.parse(saved);
-            gameData = { ...gameData, ...data };
-        }
-        let savedSkins = localStorage.getItem("skins");
-        if (savedSkins) skins = JSON.parse(savedSkins);
-        let savedBg = localStorage.getItem("backgrounds");
-        if (savedBg) backgrounds = JSON.parse(savedBg);
-        let savedClothes = localStorage.getItem("clothes");
-        if (savedClothes) clothes = JSON.parse(savedClothes);
-        let savedRooms = localStorage.getItem("rooms");
-        if (savedRooms) rooms = JSON.parse(savedRooms);
+    let savedSkins = localStorage.getItem("skins");
+    if (savedSkins) skins = JSON.parse(savedSkins);
+    let savedBg = localStorage.getItem("backgrounds");
+    if (savedBg) backgrounds = JSON.parse(savedBg);
+    let savedClothes = localStorage.getItem("clothes");
+    if (savedClothes) clothes = JSON.parse(savedClothes);
+    let savedRooms = localStorage.getItem("rooms");
+    if (savedRooms) rooms = JSON.parse(savedRooms);
+}
+
+function addDiaryEntry(message) {
+    gameData.diary.unshift({ date: new Date().toLocaleString(), message });
+    if (gameData.diary.length > 20) gameData.diary.pop();
+    saveData();
+}
+
+function addExp(amount) {
+    gameData.petExp += amount;
+    let need = gameData.petLevel * 100;
+    while (gameData.petExp >= need) {
+        gameData.petExp -= need;
+        gameData.petLevel++;
+        need = gameData.petLevel * 100;
+        addDiaryEntry(`🎉 Уровень повышен до ${gameData.petLevel}! 🎉`);
+        playLevelUpSound();
     }
+    saveData();
+    updatePetUI();
+}
+
+function updatePetUI() {
+    let need = gameData.petLevel * 100;
+    let percent = (gameData.petExp / need) * 100;
+    let emoji = skins[gameData.currentSkin]?.emoji || "🐶";
     
-    function addDiaryEntry(message) {
-        gameData.diary.unshift({ date: new Date().toLocaleString(), message });
-        if (gameData.diary.length > 20) gameData.diary.pop();
+    let clothesStr = "";
+    if (gameData.clothes.hat) clothesStr += "👒";
+    if (gameData.clothes.glasses) clothesStr += "👓";
+    if (gameData.clothes.accessory) clothesStr += "🧣";
+    
+    document.querySelectorAll(".pet-emoji").forEach(el => el.innerText = clothesStr + emoji);
+    document.querySelectorAll(".pet-name").forEach(el => el.innerText = gameData.petName);
+    document.querySelectorAll(".pet-level").forEach(el => el.innerHTML = `Уровень ${gameData.petLevel} • ${gameData.petExp}/${need} опыта`);
+    document.querySelectorAll(".progress-fill").forEach(el => el.style.width = `${percent}%`);
+    document.querySelectorAll(".score-display span, #shopScore, #dressScore, #roomScore").forEach(el => {
+        if (el && el.id !== "totalScore") el.innerText = gameData.score;
+    });
+    const totalScoreSpan = document.getElementById("totalScore");
+    if (totalScoreSpan) totalScoreSpan.innerText = gameData.score;
+    const correctCountSpan = document.getElementById("correctCount");
+    if (correctCountSpan) correctCountSpan.innerText = gameData.correctAnswers;
+    let acc = gameData.totalAttempts > 0 ? ((gameData.correctAnswers / gameData.totalAttempts) * 100).toFixed(1) : 0;
+    const profileAccuracySpan = document.getElementById("profileAccuracy");
+    if (profileAccuracySpan) profileAccuracySpan.innerText = acc;
+    const gamePetSpan = document.getElementById("gamePet");
+    if (gamePetSpan) gamePetSpan.innerHTML = `${clothesStr + emoji} Lv.${gameData.petLevel}`;
+}
+
+function animatePet(anim) {
+    let pet = document.querySelector(".pet-emoji");
+    if (pet) {
+        pet.classList.remove("pet-animation-happy", "pet-animation-sad", "pet-animation-eat", "pet-animation-walk");
+        void pet.offsetWidth;
+        pet.classList.add(`pet-animation-${anim}`);
+        setTimeout(() => pet.classList.remove(`pet-animation-${anim}`), 500);
+    }
+}
+
+function applyTheme() {
+    document.body.classList.remove("theme-forest", "theme-ocean", "theme-space", "theme-desert", "theme-city");
+    document.body.classList.add(`theme-${gameData.currentBg}`);
+}
+
+// ========== ИГРОВЫЕ ДЕЙСТВИЯ ==========
+function feedPet() {
+    addExp(10);
+    addDiaryEntry(`🍖 ${gameData.petName} поел и получил +10 опыта!`);
+    animatePet("eat");
+    playClickSound();
+    updatePetUI();
+}
+
+function walkPet() {
+    let now = Date.now();
+    if (gameData.lastWalk && now - gameData.lastWalk < 3600000) {
+        alert("Питомец устал! Подожди час.");
+        return;
+    }
+    addExp(15);
+    gameData.lastWalk = now;
+    addDiaryEntry(`🚶 ${gameData.petName} сходил на прогулку и получил +15 опыта!`);
+    animatePet("walk");
+    playClickSound();
+    updatePetUI();
+}
+
+function dressPet() { showScreen("dress"); }
+
+function newQuestion() {
+    let maxNum = currentDifficulty === "easy" ? 10 : currentDifficulty === "medium" ? 50 : 100;
+    let a = Math.floor(Math.random() * maxNum) + 1;
+    let b = Math.floor(Math.random() * maxNum) + 1;
+    let op = Math.random() > 0.5 ? "+" : "-";
+    if (op === "-" && a < b) [a, b] = [b, a];
+    currentQuestion = { text: `${a} ${op} ${b}`, answer: op === "+" ? a + b : a - b };
+    const questionEl = document.getElementById("question");
+    if (questionEl) questionEl.innerText = currentQuestion.text;
+    const answerInput = document.getElementById("answerInput");
+    if (answerInput) answerInput.value = "";
+    const gameStatus = document.getElementById("gameStatus");
+    if (gameStatus) gameStatus.innerHTML = "";
+}
+
+function checkAnswer() {
+    if (!gameActive) return;
+    let userAnswer = parseInt(document.getElementById("answerInput").value);
+    if (isNaN(userAnswer)) {
+        document.getElementById("gameStatus").innerHTML = "<span class='wrong'>Введи число!</span>";
+        return;
+    }
+    gameData.totalAttempts++;
+    if (userAnswer === currentQuestion.answer) {
+        let points = currentDifficulty === "easy" ? 10 : currentDifficulty === "medium" ? 20 : 35;
+        gameData.score += points;
+        gameData.correctAnswers++;
+        document.getElementById("gameStatus").innerHTML = `<span class='correct'>✅ +${points} баллов!</span>`;
+        addExp(5);
+        addDiaryEntry(`🎯 Решено: ${currentQuestion.text} = ${currentQuestion.answer} (+${points}⭐)`);
+        playCorrectSound();
+        animatePet("happy");
+    } else {
+        document.getElementById("gameStatus").innerHTML = `<span class='wrong'>❌ Правильно: ${currentQuestion.answer}</span>`;
+        playWrongSound();
+        animatePet("sad");
+    }
+    saveData();
+    updatePetUI();
+    newQuestion();
+}
+
+// ========== МАГАЗИН ==========
+function buyItem(item, type, price, key) {
+    if (gameData.score >= price) {
+        gameData.score -= price;
+        if (type === "skin") skins[key].owned = true;
+        else if (type === "bg") backgrounds[key].owned = true;
+        else if (type === "clothes") clothes[key].owned = true;
+        else if (type === "room") rooms[key].owned = true;
         saveData();
-    }
-    
-    function addExp(amount) {
-        gameData.petExp += amount;
-        let need = gameData.petLevel * 100;
-        while (gameData.petExp >= need) {
-            gameData.petExp -= need;
-            gameData.petLevel++;
-            need = gameData.petLevel * 100;
-            addDiaryEntry(`🎉 Уровень повышен до ${gameData.petLevel}! 🎉`);
-            playLevelUpSound();
-        }
-        saveData();
         updatePetUI();
+        renderShop();
+        renderClothesShop();
+        renderRoomShop();
+        playBuySound();
+        addDiaryEntry(`🛒 Куплено: ${item} за ${price}⭐`);
+    } else {
+        alert("Не хватает баллов!");
     }
-    
-    function updatePetUI() {
-        let need = gameData.petLevel * 100;
-        let percent = (gameData.petExp / need) * 100;
-        let emoji = skins[gameData.currentSkin]?.emoji || "🐶";
-        
-        let clothesStr = "";
-        if (gameData.clothes.hat) clothesStr += "👒";
-        if (gameData.clothes.glasses) clothesStr += "👓";
-        if (gameData.clothes.accessory) clothesStr += "🧣";
-        
-        document.querySelectorAll(".pet-emoji").forEach(el => el.innerText = clothesStr + emoji);
-        document.querySelectorAll(".pet-name").forEach(el => el.innerText = gameData.petName);
-        document.querySelectorAll(".pet-level").forEach(el => el.innerHTML = `Уровень ${gameData.petLevel} • ${gameData.petExp}/${need} опыта`);
-        document.querySelectorAll(".progress-fill").forEach(el => el.style.width = `${percent}%`);
-        document.querySelectorAll(".score-display span, #shopScore, #dressScore, #roomScore").forEach(el => {
-            if (el.id !== "totalScore") el.innerText = gameData.score;
-        });
-        document.getElementById("totalScore").innerText = gameData.score;
-        document.getElementById("correctCount").innerText = gameData.correctAnswers;
-        let acc = gameData.totalAttempts > 0 ? ((gameData.correctAnswers / gameData.totalAttempts) * 100).toFixed(1) : 0;
-        document.getElementById("profileAccuracy").innerText = acc;
-        if (document.getElementById("gamePet")) document.getElementById("gamePet").innerHTML = `${clothesStr + emoji} Lv.${gameData.petLevel}`;
+}
+
+function renderShop() {
+    let skinsHtml = "";
+    for (let [name, skin] of Object.entries(skins)) {
+        skinsHtml += `<div class="shop-item" onclick="buyItem('${name}', 'skin', ${skin.price}, '${name}')">
+            <div class="shop-item-emoji">${skin.emoji}</div>
+            <div class="shop-item-name">${name}${skin.owned ? " ✓" : ""}</div>
+            <div class="shop-item-price">${skin.price}⭐</div>
+        </div>`;
     }
+    const skinsGrid = document.getElementById("skinsGrid");
+    if (skinsGrid) skinsGrid.innerHTML = skinsHtml;
     
-    function animatePet(anim) {
-        let pet = document.querySelector(".pet-emoji");
-        if (pet) {
-            pet.classList.remove("pet-animation-happy", "pet-animation-sad", "pet-animation-eat", "pet-animation-walk");
-            void pet.offsetWidth;
-            pet.classList.add(`pet-animation-${anim}`);
-            setTimeout(() => pet.classList.remove(`pet-animation-${anim}`), 500);
-        }
+    let bgHtml = "";
+    for (let [id, bg] of Object.entries(backgrounds)) {
+        bgHtml += `<div class="shop-item" onclick="if(gameData.score>=${bg.price}){gameData.score-=${bg.price}; backgrounds['${id}'].owned=true; gameData.currentBg='${id}'; saveData(); applyTheme(); updatePetUI(); renderShop(); playBuySound();}else{alert('Не хватает баллов!');}">
+            <div class="shop-item-emoji">${id === "forest" ? "🌲" : id === "ocean" ? "🌊" : id === "space" ? "🚀" : id === "desert" ? "🏜️" : "🏙️"}</div>
+            <div class="shop-item-name">${bg.name}${bg.owned ? " ✓" : ""} ${gameData.currentBg === id ? " (активен)" : ""}</div>
+            <div class="shop-item-price">${bg.price}⭐</div>
+        </div>`;
     }
-    
-    function applyTheme() {
-        document.body.classList.remove("theme-forest", "theme-ocean", "theme-space", "theme-desert", "theme-city");
-        document.body.classList.add(`theme-${gameData.currentBg}`);
+    const bgGrid = document.getElementById("bgGrid");
+    if (bgGrid) bgGrid.innerHTML = bgHtml;
+}
+
+function renderClothesShop() {
+    let html = "";
+    for (let [name, item] of Object.entries(clothes)) {
+        let isEquipped = gameData.clothes[item.type] === name;
+        html += `<div class="shop-item" onclick="if(!${item.owned}){if(gameData.score>=${item.price}){gameData.score-=${item.price}; clothes['${name}'].owned=true; saveData(); updatePetUI(); renderClothesShop(); playBuySound();}else{alert('Не хватает баллов!');}}else{if('${isEquipped}'){gameData.clothes['${item.type}']=null;}else{gameData.clothes['${item.type}']='${name}';} saveData(); updatePetUI(); renderClothesShop(); playClickSound();}">
+            <div class="shop-item-emoji">${item.emoji}</div>
+            <div class="shop-item-name">${name}${item.owned ? (isEquipped ? " ✓ надето" : " (в инвентаре)") : ""}</div>
+            <div class="shop-item-price">${item.owned ? "Нажми чтобы надеть" : item.price + "⭐"}</div>
+        </div>`;
     }
-    
-    function feedPet() {
-        addExp(10);
-        addDiaryEntry(`🍖 ${gameData.petName} поел и получил +10 опыта!`);
-        animatePet("eat");
-        playClickSound();
-        updatePetUI();
+    const clothesGrid = document.getElementById("clothesShopGrid");
+    if (clothesGrid) clothesGrid.innerHTML = html;
+    const dressScoreSpan = document.getElementById("dressScore");
+    if (dressScoreSpan) dressScoreSpan.innerText = gameData.score;
+}
+
+function renderRoomShop() {
+    let html = "";
+    for (let [id, room] of Object.entries(rooms)) {
+        let isActive = gameData.room === id;
+        html += `<div class="shop-item" onclick="if(!${room.owned}){if(gameData.score>=${room.price}){gameData.score-=${room.price}; rooms['${id}'].owned=true; saveData(); updatePetUI(); renderRoomShop(); playBuySound();}else{alert('Не хватает баллов!');}}else{gameData.room='${id}'; saveData(); updatePetUI(); renderRoomShop(); playClickSound();}">
+            <div class="shop-item-emoji">${room.emoji}</div>
+            <div class="shop-item-name">${room.name}${room.owned ? (isActive ? " ✓ активна" : "") : ""}</div>
+            <div class="shop-item-price">${room.owned ? "Нажми чтобы выбрать" : room.price + "⭐"}</div>
+        </div>`;
     }
-    
-    function walkPet() {
-        let now = Date.now();
-        if (gameData.lastWalk && now - gameData.lastWalk < 3600000) {
-            alert("Питомец устал! Подожди час.");
-            return;
-        }
-        addExp(15);
-        gameData.lastWalk = now;
-        addDiaryEntry(`🚶 ${gameData.petName} сходил на прогулку и получил +15 опыта!`);
-        animatePet("walk");
-        playClickSound();
-        updatePetUI();
-    }
-    
-    function dressPet() { showScreen("dress"); }
-    
-    function newQuestion() {
-        let maxNum = currentDifficulty === "easy" ? 10 : currentDifficulty === "medium" ? 50 : 100;
-        let a = Math.floor(Math.random() * maxNum) + 1;
-        let b = Math.floor(Math.random() * maxNum) + 1;
-        let op = Math.random() > 0.5 ? "+" : "-";
-        if (op === "-" && a < b) [a, b] = [b, a];
-        currentQuestion = { text: `${a} ${op} ${b}`, answer: op === "+" ? a + b : a - b };
-        document.getElementById("question").innerText = currentQuestion.text;
-        document.getElementById("answerInput").value = "";
-        document.getElementById("gameStatus").innerHTML = "";
-    }
-    
-    function checkAnswer() {
-        if (!gameActive) return;
-        let userAnswer = parseInt(document.getElementById("answerInput").value);
-        if (isNaN(userAnswer)) {
-            document.getElementById("gameStatus").innerHTML = "<span class='wrong'>Введи число!</span>";
-            return;
-        }
-        gameData.totalAttempts++;
-        if (userAnswer === currentQuestion.answer) {
-            let points = currentDifficulty === "easy" ? 10 : currentDifficulty === "medium" ? 20 : 35;
-            gameData.score += points;
-            gameData.correctAnswers++;
-            document.getElementById("gameStatus").innerHTML = `<span class='correct'>✅ +${points} баллов!</span>`;
-            addExp(5);
-            addDiaryEntry(`🎯 Решено: ${currentQuestion.text} = ${currentQuestion.answer} (+${points}⭐)`);
-            playCorrectSound();
-            animatePet("happy");
-        } else {
-            document.getElementById("gameStatus").innerHTML = `<span class='wrong'>❌ Правильно: ${currentQuestion.answer}</span>`;
-            playWrongSound();
-            animatePet("sad");
-        }
-        saveData();
-        updatePetUI();
-        newQuestion();
-    }
-    
-    function buyItem(item, type, price, key) {
-        if (gameData.score >= price) {
-            gameData.score -= price;
-            if (type === "skin") skins[key].owned = true;
-            else if (type === "bg") backgrounds[key].owned = true;
-            else if (type === "clothes") clothes[key].owned = true;
-            else if (type === "room") rooms[key].owned = true;
-            saveData();
-            updatePetUI();
-            renderShop();
-            renderClothesShop();
-            renderRoomShop();
-            playBuySound();
-            addDiaryEntry(`🛒 Куплено: ${item} за ${price}⭐`);
-        } else {
-            alert("Не хватает баллов!");
-        }
-    }
-    
-    function renderShop() {
-        let skinsHtml = "";
-        for (let [name, skin] of Object.entries(skins)) {
-            skinsHtml += `<div class="shop-item" onclick="buyItem('${name}', 'skin', ${skin.price}, '${name}')">
-                <div class="shop-item-emoji">${skin.emoji}</div>
-                <div class="shop-item-name">${name}${skin.owned ? " ✓" : ""}</div>
-                <div class="shop-item-price">${skin.price}⭐</div>
-            </div>`;
-        }
-        document.getElementById("skinsGrid").innerHTML = skinsHtml;
-        
-        let bgHtml = "";
-        for (let [id, bg] of Object.entries(backgrounds)) {
-            bgHtml += `<div class="shop-item" onclick="if(gameData.score>=${bg.price}){gameData.score-=${bg.price}; backgrounds['${id}'].owned=true; gameData.currentBg='${id}'; saveData(); applyTheme(); updatePetUI(); renderShop(); playBuySound();}else{alert('Не хватает баллов!');}">
-                <div class="shop-item-emoji">${id === "forest" ? "🌲" : id === "ocean" ? "🌊" : id === "space" ? "🚀" : id === "desert" ? "🏜️" : "🏙️"}</div>
-                <div class="shop-item-name">${bg.name}${bg.owned ? " ✓" : ""} ${gameData.currentBg === id ? " (активен)" : ""}</div>
-                <div class="shop-item-price">${bg.price}⭐</div>
-            </div>`;
-        }
-        document.getElementById("bgGrid").innerHTML = bgHtml;
-    }
-    
-    function renderClothesShop() {
-        let html = "";
-        for (let [name, item] of Object.entries(clothes)) {
-            let isEquipped = gameData.clothes[item.type] === name;
-            html += `<div class="shop-item" onclick="if(!${item.owned}){if(gameData.score>=${item.price}){gameData.score-=${item.price}; clothes['${name}'].owned=true; saveData(); updatePetUI(); renderClothesShop(); playBuySound();}else{alert('Не хватает баллов!');}}else{if('${isEquipped}'){gameData.clothes['${item.type}']=null;}else{gameData.clothes['${item.type}']='${name}';} saveData(); updatePetUI(); renderClothesShop(); playClickSound();}">
-                <div class="shop-item-emoji">${item.emoji}</div>
-                <div class="shop-item-name">${name}${item.owned ? (isEquipped ? " ✓ надето" : " (в инвентаре)") : ""}</div>
-                <div class="shop-item-price">${item.owned ? "Нажми чтобы надеть" : item.price + "⭐"}</div>
-            </div>`;
-        }
-        document.getElementById("clothesShopGrid").innerHTML = html;
-        document.getElementById("dressScore").innerText = gameData.score;
-    }
-    
-    function renderRoomShop() {
-        let html = "";
-        for (let [id, room] of Object.entries(rooms)) {
-            let isActive = gameData.room === id;
-            html += `<div class="shop-item" onclick="if(!${room.owned}){if(gameData.score>=${room.price}){gameData.score-=${room.price}; rooms['${id}'].owned=true; saveData(); updatePetUI(); renderRoomShop(); playBuySound();}else{alert('Не хватает баллов!');}}else{gameData.room='${id}'; saveData(); updatePetUI(); renderRoomShop(); playClickSound();}">
-                <div class="shop-item-emoji">${room.emoji}</div>
-                <div class="shop-item-name">${room.name}${room.owned ? (isActive ? " ✓ активна" : "") : ""}</div>
-                <div class="shop-item-price">${room.owned ? "Нажми чтобы выбрать" : room.price + "⭐"}</div>
-            </div>`;
-        }
-        document.getElementById("roomGrid").innerHTML = html;
-        document.getElementById("roomScore").innerText = gameData.score;
-    }
-    
-    function showDiary() {
-        let diaryDiv = document.getElementById("diaryList");
+    const roomGrid = document.getElementById("roomGrid");
+    if (roomGrid) roomGrid.innerHTML = html;
+    const roomScoreSpan = document.getElementById("roomScore");
+    if (roomScoreSpan) roomScoreSpan.innerText = gameData.score;
+}
+
+function showDiary() {
+    let diaryDiv = document.getElementById("diaryList");
+    if (diaryDiv) {
         if (gameData.diary.length === 0) {
             diaryDiv.innerHTML = "<div style='color:white; text-align:center;'>Пока нет записей</div>";
         } else {
             diaryDiv.innerHTML = gameData.diary.map(e => `<div style='color:white; padding:8px; border-bottom:1px solid rgba(255,255,255,0.1);'><small>${e.date}</small><br>${e.message}</div>`).join("");
         }
-        showScreen("diary");
     }
-    
-    let miniGameNumber = 0;
-    function startMiniGame() {
-        miniGameNumber = Math.floor(Math.random() * 10) + 1;
-        document.getElementById("miniGameQuestion").innerHTML = "Отгадай число от 1 до 10!";
-        document.getElementById("miniGameInput").value = "";
-        document.getElementById("miniGameResult").innerHTML = "";
+    showScreen("diary");
+}
+
+// ========== МИНИ-ИГРА ==========
+function startMiniGame() {
+    miniGameNumber = Math.floor(Math.random() * 10) + 1;
+    const miniGameQuestion = document.getElementById("miniGameQuestion");
+    if (miniGameQuestion) miniGameQuestion.innerHTML = "Отгадай число от 1 до 10!";
+    const miniGameInput = document.getElementById("miniGameInput");
+    if (miniGameInput) miniGameInput.value = "";
+    const miniGameResult = document.getElementById("miniGameResult");
+    if (miniGameResult) miniGameResult.innerHTML = "";
+}
+
+function checkMiniGame() {
+    let guess = parseInt(document.getElementById("miniGameInput").value);
+    if (isNaN(guess)) {
+        document.getElementById("miniGameResult").innerHTML = "<span class='wrong'>Введи число!</span>";
+        return;
     }
-    
-    function checkMiniGame() {
-        let guess = parseInt(document.getElementById("miniGameInput").value);
-        if (isNaN(guess)) {
-            document.getElementById("miniGameResult").innerHTML = "<span class='wrong'>Введи число!</span>";
-            return;
-        }
-        if (guess === miniGameNumber) {
-            let reward = 30;
-            gameData.score += reward;
-            saveData();
-            updatePetUI();
-            document.getElementById("miniGameResult").innerHTML = `<span class='correct'>🎉 Угадал! +${reward}⭐</span>`;
-            addDiaryEntry(`🎮 Выиграл в мини-игре! +${reward}⭐`);
-            playCorrectSound();
-            setTimeout(() => showScreen("petActions"), 1500);
-        } else {
-            document.getElementById("miniGameResult").innerHTML = `<span class='wrong'>❌ Не угадал! Было число ${miniGameNumber}</span>`;
-            playWrongSound();
-            setTimeout(() => startMiniGame(), 2000);
-        }
+    if (guess === miniGameNumber) {
+        let reward = 30;
+        gameData.score += reward;
+        saveData();
+        updatePetUI();
+        document.getElementById("miniGameResult").innerHTML = `<span class='correct'>🎉 Угадал! +${reward}⭐</span>`;
+        addDiaryEntry(`🎮 Выиграл в мини-игре! +${reward}⭐`);
+        playCorrectSound();
+        setTimeout(() => showScreen("petActions"), 1500);
+    } else {
+        document.getElementById("miniGameResult").innerHTML = `<span class='wrong'>❌ Не угадал! Было число ${miniGameNumber}</span>`;
+        playWrongSound();
+        setTimeout(() => startMiniGame(), 2000);
     }
+}
+
+// ========== НАВИГАЦИЯ ПО ЭКРАНАМ ==========
+function showScreen(screen) {
+    const screens = ["menuScreen", "difficultyScreen", "gameScreen", "shopScreen", "profileScreen", "settingsScreen", "petActionsScreen", "dressScreen", "roomScreen", "diaryScreen", "miniGameScreen"];
+    screens.forEach(s => {
+        const el = document.getElementById(s);
+        if (el) el.classList.add("hidden");
+    });
     
-    function showScreen(screen) {
-        document.getElementById("menuScreen").classList.add("hidden");
-        document.getElementById("difficultyScreen").classList.add("hidden");
-        document.getElementById("gameScreen").classList.add("hidden");
-        document.getElementById("shopScreen").classList.add("hidden");
-        document.getElementById("profileScreen").classList.add("hidden");
-        document.getElementById("settingsScreen").classList.add("hidden");
-        document.getElementById("petActionsScreen").classList.add("hidden");
-        document.getElementById("dressScreen").classList.add("hidden");
-        document.getElementById("roomScreen").classList.add("hidden");
-        document.getElementById("diaryScreen").classList.add("hidden");
-        document.getElementById("miniGameScreen").classList.add("hidden");
-        
-        if (screen === "menu") document.getElementById("menuScreen").classList.remove("hidden");
-        if (screen === "difficulty") document.getElementById("difficultyScreen").classList.remove("hidden");
-        if (screen === "game") { document.getElementById("gameScreen").classList.remove("hidden"); gameActive = true; newQuestion(); }
-        if (screen === "shop") { document.getElementById("shopScreen").classList.remove("hidden"); renderShop(); }
-        if (screen === "profile") { document.getElementById("profileScreen").classList.remove("hidden"); updatePetUI(); }
-        if (screen === "settings") document.getElementById("settingsScreen").classList.remove("hidden");
-        if (screen === "petActions") document.getElementById("petActionsScreen").classList.remove("hidden");
-        if (screen === "dress") { document.getElementById("dressScreen").classList.remove("hidden"); renderClothesShop(); }
-        if (screen === "room") { document.getElementById("roomScreen").classList.remove("hidden"); renderRoomShop(); }
-        if (screen === "diary") { document.getElementById("diaryScreen").classList.remove("hidden"); }
-        if (screen === "miniGame") { document.getElementById("miniGameScreen").classList.remove("hidden"); startMiniGame(); }
+    if (screen === "menu") {
+        const menuScreen = document.getElementById("menuScreen");
+        if (menuScreen) menuScreen.classList.remove("hidden");
     }
-    
-    function startGame(diff) {
-        currentDifficulty = diff;
+    if (screen === "difficulty") {
+        const difficultyScreen = document.getElementById("difficultyScreen");
+        if (difficultyScreen) difficultyScreen.classList.remove("hidden");
+    }
+    if (screen === "game") {
+        const gameScreen = document.getElementById("gameScreen");
+        if (gameScreen) gameScreen.classList.remove("hidden");
         gameActive = true;
-        showScreen("game");
+        newQuestion();
     }
-    
-    // ========== ИНИЦИАЛИЗАЦИЯ ==========
-    loadData();
-    applyTheme();
-    updatePetUI();
-    
-    // Настройки
-    document.getElementById("musicToggle").classList.toggle("active", musicEnabled);
-    document.getElementById("sfxToggle").classList.toggle("active", sfxEnabled);
-    document.getElementById("musicVolume").value = musicVolume * 100;
-    
-    // Кнопки
-    document.getElementById("playBtn").onclick = () => showScreen("difficulty");
-    document.getElementById("shopBtn").onclick = () => showScreen("shop");
-    document.getElementById("profileBtn").onclick = () => showScreen("profile");
-    document.getElementById("settingsBtn").onclick = () => showScreen("settings");
-    document.getElementById("petActionsBtn").onclick = () => showScreen("petActions");
-    document.getElementById("backToMenuBtn").onclick = () => showScreen("menu");
-    document.getElementById("gameMenuBtn").onclick = () => { gameActive = false; showScreen("menu"); };
-    document.getElementById("shopBackBtn").onclick = () => showScreen("menu");
-    document.getElementById("profileBackBtn").onclick = () => showScreen("menu");
-    document.getElementById("settingsBackBtn").onclick = () => showScreen("menu");
-    document.getElementById("petBackBtn").onclick = () => showScreen("menu");
-    document.getElementById("dressBackBtn").onclick = () => showScreen("petActions");
-    document.getElementById("roomBackBtn").onclick = () => showScreen("petActions");
-    document.getElementById("diaryBackBtn").onclick = () => showScreen("petActions");
-    document.getElementById("gameBackBtn").onclick = () => showScreen("petActions");
-    document.getElementById("easyBtn").onclick = () => startGame("easy");
-    document.getElementById("mediumBtn").onclick = () => startGame("medium");
-    document.getElementById("hardBtn").onclick = () => startGame("hard");
-    document.getElementById("checkBtn").onclick = checkAnswer;
-    document.getElementById("feedBtn").onclick = feedPet;
-    document.getElementById("walkBtn").onclick = walkPet;
-    document.getElementById("dressBtn").onclick = dressPet;
-    document.getElementById("roomBtn").onclick = () => { renderRoomShop(); showScreen("room"); };
-    document.getElementById("diaryBtn").onclick = showDiary;
-    document.getElementById("miniGameBtn").onclick = () => showScreen("miniGame");
-    document.getElementById("miniGameGuessBtn").onclick = checkMiniGame;
-    document.getElementById("answerInput").addEventListener("keypress", (e) => { if (e.key === "Enter") checkAnswer(); });
-    document.getElementById("skinsTabBtn").onclick = () => { document.getElementById("skinsGrid").classList.remove("hidden"); document.getElementById("bgGrid").classList.add("hidden"); };
-    document.getElementById("bgTabBtn").onclick = () => { document.getElementById("skinsGrid").classList.add("hidden"); document.getElementById("bgGrid").classList.remove("hidden"); };
-    document.getElementById("renamePetBtn").onclick = () => { document.getElementById("newPetName").value = gameData.petName; document.getElementById("renameDialog").style.display = "flex"; };
-    document.getElementById("saveNameBtn").onclick = () => { let nn = document.getElementById("newPetName").value.trim(); if (nn) { gameData.petName = nn; saveData(); updatePetUI(); addDiaryEntry(`📝 ${gameData.petName} получил новое имя!`); playClickSound(); } document.getElementById("renameDialog").style.display = "none"; };
-    document.getElementById("cancelNameBtn").onclick = () => document.getElementById("renameDialog").style.display = "none";
-    document.getElementById("resetStatsBtn").onclick = () => { if (confirm("Сбросить всё?")) { gameData = { score:0, correctAnswers:0, totalAttempts:0, petLevel:1, petExp:0, petName:"Пушистик", currentSkin:"🐶 Собака", currentBg:"forest", clothes:{ hat:null, glasses:null, accessory:null }, room:"basic", diary:[], lastWalk:null, lastDailyBonus:null, streak:0 }; for(let s in skins) skins[s].owned = (s==="🐶 Собака"); for(let c in clothes) clothes[c].owned = false; for(let r in rooms) rooms[r].owned = (r==="basic"); for(let b in backgrounds) backgrounds[b].owned = (b==="forest"); saveData(); applyTheme(); updatePetUI(); showScreen("menu"); playClickSound(); } };
-    document.getElementById("resetBalanceBtn").onclick = () => { if (confirm("Обнулить баллы?")) { gameData.score = 0; saveData(); updatePetUI(); alert("Баллы обнулены!"); playClickSound(); } };
-    
-    document.getElementById("musicToggle").onclick = toggleMusic;
-    document.getElementById("sfxToggle").onclick = toggleSfx;
-    document.getElementById("musicVolume").oninput = (e) => setMusicVolume(e.target.value);
-    
-    // Запускаем фоновую музыку после первого взаимодействия с пользователем
-    document.body.addEventListener("click", () => {
-        if (musicEnabled && !musicInterval) startBackgroundMusic();
-    }, { once: true });
+    if (screen === "shop") {
+        const shopScreen = document.getElementById("shopScreen");
+        if (shopScreen) shopScreen.classList.remove("hidden");
+        renderShop();
+    }
+    if (screen === "profile") {
+        const profileScreen = document.getElementById("profileScreen");
+        if (profileScreen) profileScreen.classList.remove("hidden");
+        updatePetUI();
+    }
+    if (screen === "settings") {
+        const settingsScreen = document.getElementById("settingsScreen");
+        if (settingsScreen) settingsScreen.classList.remove("hidden");
+    }
+    if (screen === "petActions") {
+        const petActionsScreen = document.getElementById("petActionsScreen");
+        if (petActionsScreen) petActionsScreen.classList.remove("hidden");
+    }
+    if (screen === "dress") {
+        const dressScreen = document.getElementById("dressScreen");
+        if (dressScreen) dressScreen.classList.remove("hidden");
+        renderClothesShop();
+    }
+    if (screen === "room") {
+        const roomScreen = document.getElementById("roomScreen");
+        if (roomScreen) roomScreen.classList.remove("hidden");
+        renderRoomShop();
+    }
+    if (screen === "diary") {
+        const diaryScreen = document.getElementById("diaryScreen");
+        if (diaryScreen) diaryScreen.classList.remove("hidden");
+    }
+    if (screen === "miniGame") {
+        const miniGameScreen = document.getElementById("miniGameScreen");
+        if (miniGameScreen) miniGameScreen.classList.remove("hidden");
+        startMiniGame();
+    }
+}
+
+function startGame(diff) {
+    currentDifficulty = diff;
+    gameActive = true;
+    showScreen("game");
+}
+
+// ========== СБРОС ==========
+function resetAll() {
+    if (confirm("Сбросить всё?")) {
+        gameData = {
+            score: 0, correctAnswers: 0, totalAttempts: 0, petLevel: 1, petExp: 0,
+            petName: "Пушистик", currentSkin: "🐶 Собака", currentBg: "forest",
+            clothes: { hat: null, glasses: null, accessory: null }, room: "basic",
+            diary: [], lastWalk: null, lastDailyBonus: null, streak: 0
+        };
+        for (let s in skins) skins[s].owned = (s === "🐶 Собака");
+        for (let c in clothes) clothes[c].owned = false;
+        for (let r in rooms) rooms[r].owned = (r === "basic");
+        for (let b in backgrounds) backgrounds[b].owned = (b === "forest");
+        saveData();
+        applyTheme();
+        updatePetUI();
+        showScreen("menu");
+        playClickSound();
+    }
+}
+
+function resetBalance() {
+    if (confirm("Обнулить баллы?")) {
+        gameData.score = 0;
+        saveData();
+        updatePetUI();
+        alert("Баллы обнулены!");
+        playClickSound();
+    }
+}
+
+function renamePet() {
+    const renameDialog = document.getElementById("renameDialog");
+    if (renameDialog) renameDialog.style.display = "flex";
+}
+
+function saveNewName() {
+    let nn = document.getElementById("newPetName").value.trim();
+    if (nn) {
+        gameData.petName = nn;
+        saveData();
+        updatePetUI();
+        addDiaryEntry(`📝 ${gameData.petName} получил новое имя!`);
+        playClickSound();
+    }
+    const renameDialog = document.getElementById("renameDialog");
+    if (renameDialog) renameDialog.style.display = "none";
+}
+
+function cancelRename() {
+    const renameDialog = document.getElementById("renameDialog");
+    if (renameDialog) renameDialog.style.display = "none";
+}
+
+// ========== ИНИЦИАЛИЗАЦИЯ ==========
+loadData();
+applyTheme();
+updatePetUI();
+
+// Настройка переключателей
+const musicToggle = document.getElementById("musicToggle");
+const sfxToggle = document.getElementById("sfxToggle");
+if (musicToggle) musicToggle.classList.toggle("active", musicEnabled);
+if (sfxToggle) sfxToggle.classList.toggle("active", sfxEnabled);
+const musicVolumeSlider = document.getElementById("musicVolume");
+if (musicVolumeSlider) musicVolumeSlider.value = musicVolume * 100;
+
+// Запуск музыки после первого клика (автозапрет в браузерах)
+document.body.addEventListener("click", () => {
+    if (musicEnabled && bgMusicAudio.paused) startBackgroundMusic();
+}, { once: true });
+
+// ========== НАЗНАЧЕНИЕ ОБРАБОТЧИКОВ ==========
+// Главное меню
+document.getElementById("playBtn")?.addEventListener("click", () => showScreen("difficulty"));
+document.getElementById("shopBtn")?.addEventListener("click", () => showScreen("shop"));
+document.getElementById("profileBtn")?.addEventListener("click", () => showScreen("profile"));
+document.getElementById("settingsBtn")?.addEventListener("click", () => showScreen("settings"));
+document.getElementById("petActionsBtn")?.addEventListener("click", () => showScreen("petActions"));
+document.getElementById("backToMenuBtn")?.addEventListener("click", () => showScreen("menu"));
+document.getElementById("gameMenuBtn")?.addEventListener("click", () => { gameActive = false; showScreen("menu"); });
+document.getElementById("shopBackBtn")?.addEventListener("click", () => showScreen("menu"));
+document.getElementById("profileBackBtn")?.addEventListener("click", () => showScreen("menu"));
+document.getElementById("settingsBackBtn")?.addEventListener("click", () => showScreen("menu"));
+document.getElementById("petBackBtn")?.addEventListener("click", () => showScreen("menu"));
+document.getElementById("dressBackBtn")?.addEventListener("click", () => showScreen("petActions"));
+document.getElementById("roomBackBtn")?.addEventListener("click", () => showScreen("petActions"));
+document.getElementById("diaryBackBtn")?.addEventListener("click", () => showScreen("petActions"));
+document.getElementById("gameBackBtn")?.addEventListener("click", () => showScreen("petActions"));
+
+// Сложность
+document.getElementById("easyBtn")?.addEventListener("click", () => startGame("easy"));
+document.getElementById("mediumBtn")?.addEventListener("click", () => startGame("medium"));
+document.getElementById("hardBtn")?.addEventListener("click", () => startGame("hard"));
+
+// Игра
+document.getElementById("checkBtn")?.addEventListener("click", checkAnswer);
+document.getElementById("answerInput")?.addEventListener("keypress", (e) => { if (e.key === "Enter") checkAnswer(); });
+
+// Питомец
+document.getElementById("feedBtn")?.addEventListener("click", feedPet);
+document.getElementById("walkBtn")?.addEventListener("click", walkPet);
+document.getElementById("dressBtn")?.addEventListener("click", dressPet);
+document.getElementById("roomBtn")?.addEventListener("click", () => { renderRoomShop(); showScreen("room"); });
+document.getElementById("diaryBtn")?.addEventListener("click", showDiary);
+document.getElementById("miniGameBtn")?.addEventListener("click", () => showScreen("miniGame"));
+document.getElementById("miniGameGuessBtn")?.addEventListener("click", checkMiniGame);
+
+// Магазин вкладки
+document.getElementById("skinsTabBtn")?.addEventListener("click", () => {
+    document.getElementById("skinsGrid")?.classList.remove("hidden");
+    document.getElementById("bgGrid")?.classList.add("hidden");
+});
+document.getElementById("bgTabBtn")?.addEventListener("click", () => {
+    document.getElementById("skinsGrid")?.classList.add("hidden");
+    document.getElementById("bgGrid")?.classList.remove("hidden");
+});
+
+// Настройки
+document.getElementById("renamePetBtn")?.addEventListener("click", renamePet);
+document.getElementById("resetStatsBtn")?.addEventListener("click", resetAll);
+document.getElementById("resetBalanceBtn")?.addEventListener("click", resetBalance);
+if (musicToggle) musicToggle.addEventListener("click", toggleMusic);
+if (sfxToggle) sfxToggle.addEventListener("click", toggleSfx);
+if (musicVolumeSlider) musicVolumeSlider.addEventListener("input", (e) => setMusicVolume(e.target.value));
+
+// Диалог переименования
+document.getElementById("saveNameBtn")?.addEventListener("click", saveNewName);
+document.getElementById("cancelNameBtn")?.addEventListener("click", cancelRename);
+
+// Глобальные функции для onclick в магазине
+window.buyItem = buyItem;
 </script>
 </body>
 </html>
