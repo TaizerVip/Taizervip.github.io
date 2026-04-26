@@ -108,10 +108,6 @@
         .volume-slider { width: 150px; height: 6px; -webkit-appearance: none; background: rgba(255,255,255,0.3); border-radius: 10px; }
         .volume-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #ff9f43; border-radius: 50%; cursor: pointer; }
 
-        .quality-buttons { display: flex; gap: 8px; }
-        .quality-btn { flex: 1; padding: 10px; border-radius: 40px; background: rgba(255,255,255,0.15); color: white; text-align: center; cursor: pointer; }
-        .quality-btn.active { background: #ff9f43; color: #1c1c1e; }
-
         .loader {
             position: fixed;
             top: 0;
@@ -144,7 +140,6 @@
         .mini-game-input { padding: 10px; font-size: 1.2rem; text-align: center; border-radius: 30px; border: none; margin: 10px; }
         
         .hidden { display: none; }
-        .flex { display: flex; }
         .rename-dialog {
             position: fixed;
             top: 0;
@@ -340,7 +335,7 @@
 </div>
 
 <script>
-// ========== ЗВУКИ И МУЗЫКА ИЗ ФАЙЛОВ GITHUB (РАБОТАЕТ!) ==========
+// ========== ЗВУКИ И МУЗЫКА ИЗ ФАЙЛОВ (ИСПРАВЛЕНО) ==========
 let musicEnabled = true;
 let sfxEnabled = true;
 let musicVolume = 0.3;
@@ -363,33 +358,41 @@ bgMusicAudio.volume = musicVolume;
 function playCorrectSound() {
     if (!sfxEnabled) return;
     soundCorrect.currentTime = 0;
-    soundCorrect.play().catch(e => console.log("Audio play error:", e));
+    soundCorrect.play().catch(e => console.log("Audio error:", e));
 }
 
 function playWrongSound() {
     if (!sfxEnabled) return;
     soundWrong.currentTime = 0;
-    soundWrong.play().catch(e => console.log("Audio play error:", e));
+    soundWrong.play().catch(e => console.log("Audio error:", e));
 }
 
 function playClickSound() {
     if (!sfxEnabled) return;
-    // Используем короткий звук правильного ответа как клик
     soundCorrect.currentTime = 0;
-    soundCorrect.play().catch(e => console.log("Audio play error:", e));
+    soundCorrect.play().catch(e => console.log("Audio error:", e));
 }
 
 function playBuySound() {
-    playCorrectSound(); // Звук покупки
+    playCorrectSound();
 }
 
 function playLevelUpSound() {
-    playCorrectSound(); // Звук повышения уровня
+    playCorrectSound();
 }
 
+// Функции для музыки
 function startBackgroundMusic() {
     if (!musicEnabled) return;
-    bgMusicAudio.play().catch(e => console.log("Music play error (autoplay blocked):", e));
+    bgMusicAudio.play().catch(e => {
+        console.log("Music autoplay blocked, waiting for user interaction");
+        // Если автовоспроизведение заблокировано, запустим по клику
+        document.body.addEventListener("click", () => {
+            if (musicEnabled && bgMusicAudio.paused) {
+                bgMusicAudio.play().catch(e => console.log("Music play error:", e));
+            }
+        }, { once: true });
+    });
 }
 
 function stopBackgroundMusic() {
@@ -400,6 +403,10 @@ function stopBackgroundMusic() {
 function setMusicVolume(vol) {
     musicVolume = Math.max(0, Math.min(1, vol / 100));
     bgMusicAudio.volume = musicVolume;
+    // Сохраняем настройку
+    localStorage.setItem("musicVolume", musicVolume);
+    localStorage.setItem("musicEnabled", musicEnabled);
+    localStorage.setItem("sfxEnabled", sfxEnabled);
 }
 
 function toggleMusic() {
@@ -411,15 +418,17 @@ function toggleMusic() {
     }
     const musicToggle = document.getElementById("musicToggle");
     if (musicToggle) musicToggle.classList.toggle("active", musicEnabled);
+    localStorage.setItem("musicEnabled", musicEnabled);
 }
 
 function toggleSfx() {
     sfxEnabled = !sfxEnabled;
     const sfxToggle = document.getElementById("sfxToggle");
     if (sfxToggle) sfxToggle.classList.toggle("active", sfxEnabled);
+    localStorage.setItem("sfxEnabled", sfxEnabled);
 }
 
-// ========== ДАННЫЕ ИГРЫ ==========
+// ========== ДАННЫЕ ИГРЫ (ИСПРАВЛЕНА ЛОГИКА СОХРАНЕНИЯ) ==========
 let gameData = {
     score: 0,
     correctAnswers: 0,
@@ -499,6 +508,14 @@ function loadData() {
     if (savedClothes) clothes = JSON.parse(savedClothes);
     let savedRooms = localStorage.getItem("rooms");
     if (savedRooms) rooms = JSON.parse(savedRooms);
+    
+    // Загружаем настройки звука
+    let savedMusicEnabled = localStorage.getItem("musicEnabled");
+    if (savedMusicEnabled !== null) musicEnabled = savedMusicEnabled === "true";
+    let savedSfxEnabled = localStorage.getItem("sfxEnabled");
+    if (savedSfxEnabled !== null) sfxEnabled = savedSfxEnabled === "true";
+    let savedMusicVolume = localStorage.getItem("musicVolume");
+    if (savedMusicVolume !== null) musicVolume = parseFloat(savedMusicVolume);
 }
 
 function addDiaryEntry(message) {
@@ -631,58 +648,120 @@ function checkAnswer() {
     newQuestion();
 }
 
-// ========== МАГАЗИН ==========
-function buyItem(item, type, price, key) {
-    if (gameData.score >= price) {
-        gameData.score -= price;
-        if (type === "skin") skins[key].owned = true;
-        else if (type === "bg") backgrounds[key].owned = true;
-        else if (type === "clothes") clothes[key].owned = true;
-        else if (type === "room") rooms[key].owned = true;
+// ========== МАГАЗИН (ИСПРАВЛЕНО - СКИНЫ НЕ УДАЛЯЮТСЯ) ==========
+function buySkin(skinName) {
+    const skin = skins[skinName];
+    if (!skin.owned && gameData.score >= skin.price) {
+        gameData.score -= skin.price;
+        skin.owned = true;
         saveData();
         updatePetUI();
         renderShop();
-        renderClothesShop();
-        renderRoomShop();
         playBuySound();
-        addDiaryEntry(`🛒 Куплено: ${item} за ${price}⭐`);
+        addDiaryEntry(`🛒 Куплен скин: ${skinName} за ${skin.price}⭐`);
+    } else if (skin.owned) {
+        // Просто меняем текущий скин
+        gameData.currentSkin = skinName;
+        saveData();
+        updatePetUI();
+        renderShop();
+        playClickSound();
+        addDiaryEntry(`🎨 Выбран скин: ${skinName}`);
+    } else {
+        alert("Не хватает баллов!");
+    }
+}
+
+function buyBackground(bgId) {
+    const bg = backgrounds[bgId];
+    if (!bg.owned && gameData.score >= bg.price) {
+        gameData.score -= bg.price;
+        bg.owned = true;
+        saveData();
+        updatePetUI();
+        renderShop();
+        playBuySound();
+        addDiaryEntry(`🛒 Куплен фон: ${bg.name} за ${bg.price}⭐`);
+    } else if (bg.owned) {
+        gameData.currentBg = bgId;
+        saveData();
+        applyTheme();
+        updatePetUI();
+        renderShop();
+        playClickSound();
+        addDiaryEntry(`🌄 Выбран фон: ${bg.name}`);
     } else {
         alert("Не хватает баллов!");
     }
 }
 
 function renderShop() {
+    // Скины
     let skinsHtml = "";
     for (let [name, skin] of Object.entries(skins)) {
-        skinsHtml += `<div class="shop-item" onclick="buyItem('${name}', 'skin', ${skin.price}, '${name}')">
+        const isOwned = skin.owned;
+        const isCurrent = gameData.currentSkin === name;
+        skinsHtml += `<div class="shop-item" onclick="buySkin('${name}')">
             <div class="shop-item-emoji">${skin.emoji}</div>
-            <div class="shop-item-name">${name}${skin.owned ? " ✓" : ""}</div>
-            <div class="shop-item-price">${skin.price}⭐</div>
+            <div class="shop-item-name">${name}${isOwned ? (isCurrent ? " ✓ активен" : " (в инвентаре)") : ""}</div>
+            <div class="shop-item-price">${isOwned ? "Нажми чтобы выбрать" : skin.price + "⭐"}</div>
         </div>`;
     }
     const skinsGrid = document.getElementById("skinsGrid");
     if (skinsGrid) skinsGrid.innerHTML = skinsHtml;
     
+    // Фоны
     let bgHtml = "";
     for (let [id, bg] of Object.entries(backgrounds)) {
-        bgHtml += `<div class="shop-item" onclick="if(gameData.score>=${bg.price}){gameData.score-=${bg.price}; backgrounds['${id}'].owned=true; gameData.currentBg='${id}'; saveData(); applyTheme(); updatePetUI(); renderShop(); playBuySound();}else{alert('Не хватает баллов!');}">
-            <div class="shop-item-emoji">${id === "forest" ? "🌲" : id === "ocean" ? "🌊" : id === "space" ? "🚀" : id === "desert" ? "🏜️" : "🏙️"}</div>
-            <div class="shop-item-name">${bg.name}${bg.owned ? " ✓" : ""} ${gameData.currentBg === id ? " (активен)" : ""}</div>
-            <div class="shop-item-price">${bg.price}⭐</div>
+        const isOwned = bg.owned;
+        const isCurrent = gameData.currentBg === id;
+        let emoji = id === "forest" ? "🌲" : id === "ocean" ? "🌊" : id === "space" ? "🚀" : id === "desert" ? "🏜️" : "🏙️";
+        bgHtml += `<div class="shop-item" onclick="buyBackground('${id}')">
+            <div class="shop-item-emoji">${emoji}</div>
+            <div class="shop-item-name">${bg.name}${isOwned ? (isCurrent ? " ✓ активен" : " (в инвентаре)") : ""}</div>
+            <div class="shop-item-price">${isOwned ? "Нажми чтобы выбрать" : bg.price + "⭐"}</div>
         </div>`;
     }
     const bgGrid = document.getElementById("bgGrid");
     if (bgGrid) bgGrid.innerHTML = bgHtml;
 }
 
+function buyClothes(itemName) {
+    const item = clothes[itemName];
+    if (!item.owned && gameData.score >= item.price) {
+        gameData.score -= item.price;
+        item.owned = true;
+        saveData();
+        updatePetUI();
+        renderClothesShop();
+        playBuySound();
+        addDiaryEntry(`🛒 Куплена одежда: ${itemName} за ${item.price}⭐`);
+    } else if (item.owned) {
+        // Переключаем одежду
+        if (gameData.clothes[item.type] === itemName) {
+            gameData.clothes[item.type] = null;
+            addDiaryEntry(`👕 Снята одежда: ${itemName}`);
+        } else {
+            gameData.clothes[item.type] = itemName;
+            addDiaryEntry(`👗 Надета одежда: ${itemName}`);
+        }
+        saveData();
+        updatePetUI();
+        renderClothesShop();
+        playClickSound();
+    } else {
+        alert("Не хватает баллов!");
+    }
+}
+
 function renderClothesShop() {
     let html = "";
     for (let [name, item] of Object.entries(clothes)) {
         let isEquipped = gameData.clothes[item.type] === name;
-        html += `<div class="shop-item" onclick="if(!${item.owned}){if(gameData.score>=${item.price}){gameData.score-=${item.price}; clothes['${name}'].owned=true; saveData(); updatePetUI(); renderClothesShop(); playBuySound();}else{alert('Не хватает баллов!');}}else{if('${isEquipped}'){gameData.clothes['${item.type}']=null;}else{gameData.clothes['${item.type}']='${name}';} saveData(); updatePetUI(); renderClothesShop(); playClickSound();}">
+        html += `<div class="shop-item" onclick="buyClothes('${name}')">
             <div class="shop-item-emoji">${item.emoji}</div>
             <div class="shop-item-name">${name}${item.owned ? (isEquipped ? " ✓ надето" : " (в инвентаре)") : ""}</div>
-            <div class="shop-item-price">${item.owned ? "Нажми чтобы надеть" : item.price + "⭐"}</div>
+            <div class="shop-item-price">${item.owned ? "Нажми чтобы надеть/снять" : item.price + "⭐"}</div>
         </div>`;
     }
     const clothesGrid = document.getElementById("clothesShopGrid");
@@ -691,13 +770,35 @@ function renderClothesShop() {
     if (dressScoreSpan) dressScoreSpan.innerText = gameData.score;
 }
 
+function buyRoom(roomId) {
+    const room = rooms[roomId];
+    if (!room.owned && gameData.score >= room.price) {
+        gameData.score -= room.price;
+        room.owned = true;
+        saveData();
+        updatePetUI();
+        renderRoomShop();
+        playBuySound();
+        addDiaryEntry(`🛒 Куплена комната: ${room.name} за ${room.price}⭐`);
+    } else if (room.owned) {
+        gameData.room = roomId;
+        saveData();
+        updatePetUI();
+        renderRoomShop();
+        playClickSound();
+        addDiaryEntry(`🏠 Выбрана комната: ${room.name}`);
+    } else {
+        alert("Не хватает баллов!");
+    }
+}
+
 function renderRoomShop() {
     let html = "";
     for (let [id, room] of Object.entries(rooms)) {
         let isActive = gameData.room === id;
-        html += `<div class="shop-item" onclick="if(!${room.owned}){if(gameData.score>=${room.price}){gameData.score-=${room.price}; rooms['${id}'].owned=true; saveData(); updatePetUI(); renderRoomShop(); playBuySound();}else{alert('Не хватает баллов!');}}else{gameData.room='${id}'; saveData(); updatePetUI(); renderRoomShop(); playClickSound();}">
+        html += `<div class="shop-item" onclick="buyRoom('${id}')">
             <div class="shop-item-emoji">${room.emoji}</div>
-            <div class="shop-item-name">${room.name}${room.owned ? (isActive ? " ✓ активна" : "") : ""}</div>
+            <div class="shop-item-name">${room.name}${room.owned ? (isActive ? " ✓ активна" : " (в инвентаре)") : ""}</div>
             <div class="shop-item-price">${room.owned ? "Нажми чтобы выбрать" : room.price + "⭐"}</div>
         </div>`;
     }
@@ -835,6 +936,9 @@ function resetAll() {
         saveData();
         applyTheme();
         updatePetUI();
+        renderShop();
+        renderClothesShop();
+        renderRoomShop();
         showScreen("menu");
         playClickSound();
     }
@@ -845,6 +949,9 @@ function resetBalance() {
         gameData.score = 0;
         saveData();
         updatePetUI();
+        renderShop();
+        renderClothesShop();
+        renderRoomShop();
         alert("Баллы обнулены!");
         playClickSound();
     }
@@ -885,11 +992,10 @@ if (musicToggle) musicToggle.classList.toggle("active", musicEnabled);
 if (sfxToggle) sfxToggle.classList.toggle("active", sfxEnabled);
 const musicVolumeSlider = document.getElementById("musicVolume");
 if (musicVolumeSlider) musicVolumeSlider.value = musicVolume * 100;
+bgMusicAudio.volume = musicVolume;
 
-// Запуск музыки после первого клика (автозапрет в браузерах)
-document.body.addEventListener("click", () => {
-    if (musicEnabled && bgMusicAudio.paused) startBackgroundMusic();
-}, { once: true });
+// Запуск музыки
+startBackgroundMusic();
 
 // ========== НАЗНАЧЕНИЕ ОБРАБОТЧИКОВ ==========
 // Главное меню
@@ -950,7 +1056,10 @@ document.getElementById("saveNameBtn")?.addEventListener("click", saveNewName);
 document.getElementById("cancelNameBtn")?.addEventListener("click", cancelRename);
 
 // Глобальные функции для onclick в магазине
-window.buyItem = buyItem;
+window.buySkin = buySkin;
+window.buyBackground = buyBackground;
+window.buyClothes = buyClothes;
+window.buyRoom = buyRoom;
 </script>
 </body>
 </html>
